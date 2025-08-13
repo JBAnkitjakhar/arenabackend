@@ -160,7 +160,7 @@ public class UserProgressService {
         stats.put("totalSolvedGlobally", totalSolvedGlobally);
         
         // Total unique users who solved at least one question
-        long activeUsers = userProgressRepository.findSolvedQuestionsByUser("").size(); // This needs a proper query
+        long activeUsers = userProgressRepository.countDistinctUsersBySolvedTrue();
         stats.put("activeUsers", activeUsers);
         
         // Average questions solved per active user

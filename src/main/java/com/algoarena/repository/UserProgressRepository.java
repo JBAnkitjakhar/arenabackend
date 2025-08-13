@@ -61,4 +61,7 @@ public interface UserProgressRepository extends MongoRepository<UserProgress, St
     @Query(value = "{ 'user': ?0, 'solved': true }", 
            fields = "{ 'level': 1 }")
     List<UserProgress> findSolvedQuestionLevelsByUser(String userId);
+
+    @Query("SELECT COUNT(DISTINCT user) FROM UserProgress WHERE solved = true")
+    long countDistinctUsersBySolvedTrue();
 }
