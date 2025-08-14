@@ -79,7 +79,9 @@ Once running, visit:
 
 
 
-# application-local.properties.template
+# application-local.properties
+
+
 # Copy this file to application-local.properties and fill in your actual values
 # This template file is safe to commit - it contains no real secrets
 

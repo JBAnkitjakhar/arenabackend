@@ -97,35 +97,4 @@ public class AppConfig {
     public void setCors(Cors cors) { this.cors = cors; }
 }
 
-
-
-
-// # src/main/resources/application-local.properties
-// # Local Development Configuration
-
-// # MongoDB Atlas Configuration
-// spring.data.mongodb.uri=mongodb+srv://ankitalgo:ankitalgo98@cluster0.zaz9iwg.mongodb.net/algoarena?retryWrites=true&w=majority&appName=Cluster0
-
-// # OAuth2 Configuration - Replace with your actual values
-// spring.security.oauth2.client.registration.google.client-id=239280589443-0pdoefpvjffetoc8a0b0vd9dt3suvbdk.apps.googleusercontent.com
-// spring.security.oauth2.client.registration.google.client-secret=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
-
-// spring.security.oauth2.client.registration.github.client-id=Ov23liWPiHmd3cahVDCS
-// spring.security.oauth2.client.registration.github.client-secret=b66590dc2e3ca401f2c3a6f97bae7b1ffa423df2
-
-// # JWT Configuration
-// app.jwt.secret=de93cf7dff2e469fd3569ae38c093dc7d4ba51877fb866d79aa371a8bdcc795b84da70068af23e0b5f6f3a9af661cdfdfebe5a2af3788292ccb284accd2ca734
-
-// # Cloudinary Configuration - Replace with your actual values
-// app.cloudinary.cloud-name=dknqdokha
-// app.cloudinary.api-key=854872614664444
-// app.cloudinary.api-secret=kQIB-LORSXnomB5CgAWZimVF-xg
-
-// # Redis Configuration (local fallback)
-// spring.data.redis.url="rediss://default:AdVCAAIjcDEzZTE3MmIzZGVmMDA0YmIxYTEyZTg5OTNmMGZhYTJjY3AxMA@humble-cockatoo-54594.upstash.io:6379"
-
-// # CORS for local development
-// app.cors.allowed-origins=http://localhost:3000
-
-// # Piston API
-// app.piston.api-url=https://emkc.org/api/v2/piston
+  

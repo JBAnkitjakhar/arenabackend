@@ -7,6 +7,8 @@ import com.algoarena.service.auth.JwtService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -18,6 +20,8 @@ import java.io.IOException;
 
 @Component
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(OAuth2SuccessHandler.class);
 
     @Autowired
     private AuthService authService;
@@ -35,12 +39,17 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         String registrationId = extractRegistrationId(request);
         
+        logger.info("OAuth2 authentication successful for provider: {}", registrationId);
+        logger.debug("OAuth2 user attributes: {}", oAuth2User.getAttributes());
+
         try {
             // Process OAuth2 user and get or create user
             User user = authService.processOAuth2User(oAuth2User, registrationId);
+            logger.info("User processed successfully: {}", user.getEmail());
             
             // Generate JWT token
             String token = jwtService.generateToken(user);
+            logger.debug("JWT token generated for user: {}", user.getEmail());
             
             // Redirect to frontend with token
             String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/auth/callback")
@@ -48,13 +57,15 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     .queryParam("user", user.getId())
                     .build().toUriString();
             
+            logger.info("Redirecting to frontend: {}", targetUrl);
             getRedirectStrategy().sendRedirect(request, response, targetUrl);
             
         } catch (Exception e) {
-            logger.error("Error processing OAuth2 authentication", e);
+            logger.error("Error processing OAuth2 authentication for provider: " + registrationId, e);
             
-            String errorUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/auth/error")
+            String errorUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/auth/login")
                     .queryParam("error", "authentication_failed")
+                    .queryParam("message", e.getMessage())
                     .build().toUriString();
             
             getRedirectStrategy().sendRedirect(request, response, errorUrl);
@@ -63,8 +74,13 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     private String extractRegistrationId(HttpServletRequest request) {
         String requestUri = request.getRequestURI();
-        // Extract from URI like /api/auth/oauth2/callback/google
+        logger.debug("Extracting registration ID from URI: {}", requestUri);
+        
+        // Extract from URI like /oauth2/callback/google
         String[] parts = requestUri.split("/");
-        return parts[parts.length - 1]; // Last part is registration ID
+        String registrationId = parts[parts.length - 1];
+        
+        logger.debug("Extracted registration ID: {}", registrationId);
+        return registrationId;
     }
 }
