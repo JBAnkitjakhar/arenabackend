@@ -51,20 +51,21 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
+                        // ✅ FIXED: Remove context path since Spring Security matches AFTER context path resolution
+                        // Public endpoints - Spring Security sees these WITHOUT /api prefix
                         .requestMatchers(
-                                "/auth/**",
-                                "/oauth2/**", 
-                                "/login/**",
-                                "/health",
-                                "/actuator/**",
-                                "/error"
+                                "/auth/**",           // Matches /api/auth/** 
+                                "/oauth2/**",         // Matches /api/oauth2/**
+                                "/login/**",          // Matches /api/login/**
+                                "/health",            // Matches /api/health
+                                "/actuator/**",       // Matches /api/actuator/**
+                                "/error"              // Matches /api/error
                         ).permitAll()
                         
                         // Admin only endpoints
                         .requestMatchers(
-                                "/admin/**",
-                                "/dsa/admin/**"
+                                "/admin/**",          // Matches /api/admin/**
+                                "/dsa/admin/**"       // Matches /api/dsa/admin/**
                         ).hasAnyRole("ADMIN", "SUPERADMIN")
                         
                         // All other requests need authentication
@@ -123,19 +124,8 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * ✅ CURRENT SPRING SECURITY 6 STANDARD APPROACH
-     * 
-     * Note: The deprecation warnings are for future Spring Security 7, not current version.
-     * This is the officially recommended approach for Spring Security 6.x.
-     * 
-     * Suppressing warnings because:
-     * 1. No alternative exists in Spring Security 6.x
-     * 2. This is the official documentation approach
-     * 3. Warnings are premature for unreleased Spring Security 7
-     */
     @Bean
-    @SuppressWarnings("deprecation") // Suppress premature Spring Security 7 warnings
+    @SuppressWarnings("deprecation")
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);

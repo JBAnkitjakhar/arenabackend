@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -27,6 +28,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private UserDetailsService userDetailsService;
 
+    // ✅ FIXED: Define specific endpoints to skip JWT processing
+    private static final List<String> SKIP_JWT_PATHS = List.of(
+            "/oauth2/",
+            "/login",
+            "/error",
+            "/actuator/",
+            "/auth/google",
+            "/auth/github",
+            "/auth/health"
+    );
+
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
@@ -34,8 +46,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        // Check if it's an auth endpoint
-        if (request.getServletPath().contains("/api/auth")) {
+        final String path = request.getServletPath();
+        
+        // ✅ FIXED: Only skip JWT for specific auth endpoints, NOT all /api/auth
+        if (shouldSkipJwtProcessing(path)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -56,11 +70,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             userEmail = jwtService.extractUsername(jwt);
 
-            // If user email is present and user is not already authenticated
+            // If user email is present and no authentication is set in SecurityContext
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-
-                // If token is valid, set authentication
+                
+                // Validate token and set authentication
                 if (jwtService.isTokenValid(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
@@ -74,9 +88,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            logger.error("Cannot set user authentication: {}", e);
+            // Log the error but continue with the filter chain
+            logger.error("JWT Authentication failed", e);
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * ✅ FIXED: Check if JWT processing should be skipped for this path
+     */
+    private boolean shouldSkipJwtProcessing(String path) {
+        return SKIP_JWT_PATHS.stream().anyMatch(path::contains);
     }
 }
