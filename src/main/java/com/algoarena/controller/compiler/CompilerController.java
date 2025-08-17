@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/compiler")
+@RequestMapping("/compiler")
 @PreAuthorize("isAuthenticated()")
 public class CompilerController {
 

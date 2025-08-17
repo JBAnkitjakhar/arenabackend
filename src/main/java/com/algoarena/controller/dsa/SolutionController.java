@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 @RestController
-@RequestMapping("/api/solutions")
+@RequestMapping("/solutions")
 public class SolutionController {
 
     @Autowired

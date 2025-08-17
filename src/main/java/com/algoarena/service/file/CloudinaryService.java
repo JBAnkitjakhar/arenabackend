@@ -1,4 +1,5 @@
 // src/main/java/com/algoarena/service/file/CloudinaryService.java
+// 68a0cc009bfc40d04af794d0
 package com.algoarena.service.file;
 
 import com.algoarena.config.CloudinaryConfig;
@@ -40,16 +41,16 @@ public class CloudinaryService {
         uploadOptions.put("folder", "algoarena/" + folder);
         uploadOptions.put("public_id", publicId);
         uploadOptions.put("resource_type", "image");
-        uploadOptions.put("format", "auto");
-        uploadOptions.put("quality", "auto:good");
+        // uploadOptions.put("format", "auto");
+        // uploadOptions.put("quality", "auto:good");
         
         // FIXED: Suppress the generic type warning
         @SuppressWarnings("rawtypes")
         Transformation transformation = new Transformation()
                 .width(1200)
                 .height(800)
-                .crop("limit")
-                .quality("auto:good");
+                .crop("limit");
+                // .quality("auto");
         
         uploadOptions.put("transformation", transformation);
         
@@ -125,8 +126,8 @@ public class CloudinaryService {
             Transformation transformation = new Transformation()
                     .width(width)
                     .height(height)
-                    .crop("fill")
-                    .quality("auto:good");
+                    .crop("fill");
+                    // .quality("auto:good");
             
             String thumbnailUrl = cloudinary.url()
                     .transformation(transformation)

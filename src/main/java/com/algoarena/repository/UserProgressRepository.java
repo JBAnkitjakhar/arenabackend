@@ -50,10 +50,13 @@ public interface UserProgressRepository extends MongoRepository<UserProgress, St
     // Check if user has solved a question
     boolean existsByUser_IdAndQuestion_IdAndSolvedTrue(String userId, String questionId);
 
-    // Get recent activity for a user
+    // Get recent activity for a user (last 10)
     List<UserProgress> findTop10ByUser_IdAndSolvedTrueOrderBySolvedAtDesc(String userId);
 
-    // Get overall statistics
+    // Get recent activity for streak calculation (last 30)
+    List<UserProgress> findTop30ByUser_IdAndSolvedTrueOrderBySolvedAtDesc(String userId);
+
+    // Get overall statistics - count total solved questions across all users
     @Query(value = "{ 'solved': true }", count = true)
     long countTotalSolvedQuestions();
 
@@ -62,6 +65,11 @@ public interface UserProgressRepository extends MongoRepository<UserProgress, St
            fields = "{ 'level': 1 }")
     List<UserProgress> findSolvedQuestionLevelsByUser(String userId);
 
-    @Query("SELECT COUNT(DISTINCT user) FROM UserProgress WHERE solved = true")
-    long countDistinctUsersBySolvedTrue();
+    // FIXED: Count distinct users who have solved at least one question
+    // Note: MongoDB aggregation for distinct count - this may need custom implementation
+    @Query("{ 'solved': true }")
+    List<UserProgress> findAllSolvedProgress();
+    
+    // Alternative: Use this method in service layer to count distinct users
+    // You can implement the distinct count logic in UserProgressService
 }

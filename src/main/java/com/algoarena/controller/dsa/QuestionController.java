@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/questions")
+@RequestMapping("/questions")
 public class QuestionController {
 
     @Autowired

@@ -14,9 +14,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -82,7 +85,7 @@ public class UserProgressService {
                 .toList();
     }
 
-    // Get user progress statistics
+    // UPDATED: Get user progress statistics with streak and recentSolved
     public Map<String, Object> getUserProgressStats(String userId) {
         Map<String, Object> stats = new HashMap<>();
         
@@ -122,6 +125,14 @@ public class UserProgressService {
         }
         stats.put("progressByLevel", progressByLevel);
         
+        // NEW: Calculate streak (simplified version)
+        int streak = calculateUserStreak(userId);
+        stats.put("streak", streak);
+        
+        // NEW: Recent solved count (last 7 days)
+        int recentSolved = getRecentSolvedCount(userId, 7);
+        stats.put("recentSolved", recentSolved);
+        
         return stats;
     }
 
@@ -159,8 +170,8 @@ public class UserProgressService {
         long totalSolvedGlobally = userProgressRepository.countTotalSolvedQuestions();
         stats.put("totalSolvedGlobally", totalSolvedGlobally);
         
-        // Total unique users who solved at least one question
-        long activeUsers = userProgressRepository.countDistinctUsersBySolvedTrue();
+        // Count distinct users who solved at least one question
+        long activeUsers = getDistinctActiveUsersCount();
         stats.put("activeUsers", activeUsers);
         
         // Average questions solved per active user
@@ -226,5 +237,82 @@ public class UserProgressService {
         rankInfo.put("rank", "Calculation needed"); // Placeholder
         
         return rankInfo;
+    }
+
+    // ==================== NEW HELPER METHODS ====================
+
+    /**
+     * Calculate user's current streak (simplified version)
+     * This counts consecutive days with at least one solved question
+     */
+    private int calculateUserStreak(String userId) {
+        try {
+            List<UserProgress> recentProgress = userProgressRepository.findTop30ByUser_IdAndSolvedTrueOrderBySolvedAtDesc(userId);
+            
+            if (recentProgress.isEmpty()) {
+                return 0;
+            }
+            
+            // Simple streak calculation - consecutive days with at least one solve
+            LocalDate today = LocalDate.now();
+            LocalDate currentDate = today;
+            int streak = 0;
+            
+            Set<LocalDate> solvedDates = new HashSet<>();
+            for (UserProgress progress : recentProgress) {
+                if (progress.getSolvedAt() != null) {
+                    LocalDate solveDate = progress.getSolvedAt().toLocalDate();
+                    solvedDates.add(solveDate);
+                }
+            }
+            
+            // Count consecutive days from today backwards
+            while (solvedDates.contains(currentDate)) {
+                streak++;
+                currentDate = currentDate.minusDays(1);
+            }
+            
+            return streak;
+        } catch (Exception e) {
+            return 0; // Return 0 if calculation fails
+        }
+    }
+
+    /**
+     * Get count of questions solved in recent days
+     */
+    private int getRecentSolvedCount(String userId, int days) {
+        try {
+            LocalDateTime cutoffDate = LocalDateTime.now().minusDays(days);
+            
+            List<UserProgress> allSolved = userProgressRepository.findByUser_IdAndSolvedTrue(userId);
+            
+            return (int) allSolved.stream()
+                    .filter(progress -> progress.getSolvedAt() != null && progress.getSolvedAt().isAfter(cutoffDate))
+                    .count();
+        } catch (Exception e) {
+            return 0; // Return 0 if calculation fails
+        }
+    }
+
+    /**
+     * Count distinct users who have solved at least one question
+     * This method handles the distinct count logic since MongoDB aggregation can be complex
+     */
+    private long getDistinctActiveUsersCount() {
+        try {
+            List<UserProgress> allSolvedProgress = userProgressRepository.findAllSolvedProgress();
+            
+            Set<String> distinctUserIds = new HashSet<>();
+            for (UserProgress progress : allSolvedProgress) {
+                if (progress.getUser() != null) {
+                    distinctUserIds.add(progress.getUser().getId());
+                }
+            }
+            
+            return distinctUserIds.size();
+        } catch (Exception e) {
+            return 0; // Return 0 if calculation fails
+        }
     }
 }

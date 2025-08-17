@@ -51,24 +51,41 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ FIXED: Remove context path since Spring Security matches AFTER context path resolution
-                        // Public endpoints - Spring Security sees these WITHOUT /api prefix
+                        // ✅ PUBLIC ENDPOINTS (No authentication required)
                         .requestMatchers(
-                                "/auth/**",           // Matches /api/auth/** 
-                                "/oauth2/**",         // Matches /api/oauth2/**
-                                "/login/**",          // Matches /api/login/**
-                                "/health",            // Matches /api/health
-                                "/actuator/**",       // Matches /api/actuator/**
-                                "/error"              // Matches /api/error
+                                "/auth/**",           // Authentication endpoints
+                                "/oauth2/**",         // OAuth2 endpoints  
+                                "/login/**",          // Login pages
+                                "/health",            // Health check
+                                "/actuator/**",       // Actuator endpoints
+                                "/error"              // Error pages
                         ).permitAll()
                         
-                        // Admin only endpoints
+                        // ✅ ADMIN-ONLY ENDPOINTS (Require ADMIN or SUPERADMIN role)
                         .requestMatchers(
-                                "/admin/**",          // Matches /api/admin/**
-                                "/dsa/admin/**"       // Matches /api/dsa/admin/**
+                                "/admin/**",          // Admin panel
+                                "/categories/**",     // Category management
+                                "/questions/**",      // Question management (create/update/delete)
+                                "/solutions/question/*/create", // Create solutions
+                                "/solutions/*/update", // Update solutions  
+                                "/solutions/*/delete", // Delete solutions
+                                "/files/**"           // File uploads
                         ).hasAnyRole("ADMIN", "SUPERADMIN")
                         
-                        // All other requests need authentication
+                        // ✅ AUTHENTICATED ENDPOINTS (Any logged-in user)
+                        .requestMatchers(
+                                "/questions/*/view",  // View question details
+                                "/solutions/question/*", // View solutions for question
+                                "/solutions/*",       // View individual solutions
+                                "/approaches/**",     // User approaches
+                                "/compiler/**",       // Code compiler
+                                "/users/**"           // User-related endpoints
+                        ).authenticated()
+                        
+                        // ✅ SPECIFIC QUESTION ENDPOINTS (Public list, auth for details)
+                        .requestMatchers("/questions").permitAll()  // Public question list
+                        
+                        // Everything else requires authentication
                         .anyRequest().authenticated()
                 )
                 // OAuth2 Login Configuration
