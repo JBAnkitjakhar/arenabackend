@@ -29,15 +29,12 @@ public class ApproachService {
     private static final int MAX_APPROACHES_PER_QUESTION = 3;
     private static final int MAX_TOTAL_SIZE_PER_USER_PER_QUESTION = 15 * 1024; // 15KB
 
-    // Get approach by ID and user (security check)
+    // FIXED: Get approach by ID and user (security check)
     public ApproachDTO getApproachByIdAndUser(String id, String userId) {
-        List<Approach> approaches = approachRepository.findByQuestion_IdAndUser_Id("", userId);
-        Approach approach = approaches.stream()
-                .filter(a -> a.getId().equals(id))
-                .findFirst()
+        return approachRepository.findById(id)
+                .filter(approach -> approach.getUser().getId().equals(userId))
+                .map(ApproachDTO::fromEntity)
                 .orElse(null);
-        
-        return approach != null ? ApproachDTO.fromEntity(approach) : null;
     }
 
     // Get approaches by question and user
@@ -48,41 +45,74 @@ public class ApproachService {
                 .toList();
     }
 
-    // Create new approach
+    // UPDATED: Create new approach with count and size validation
     public ApproachDTO createApproach(String questionId, ApproachDTO approachDTO, User user) {
         // Find the question
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new RuntimeException("Question not found"));
 
+        // Check approach count limit
+        long existingCount = approachRepository.countByQuestion_IdAndUser_Id(questionId, user.getId());
+        if (existingCount >= MAX_APPROACHES_PER_QUESTION) {
+            throw new RuntimeException("Maximum " + MAX_APPROACHES_PER_QUESTION + " approaches allowed per question. You have already submitted " + existingCount + " approaches.");
+        }
+
+        // Check size limits before creation
+        String textContent = approachDTO.getTextContent();
+        String codeContent = approachDTO.getCodeContent();
+        
+        Map<String, Object> sizeCheck = checkSizeLimits(user.getId(), questionId, textContent, codeContent, null);
+        if (!(Boolean) sizeCheck.get("canAdd")) {
+            int remainingBytes = (Integer) sizeCheck.get("remainingBytes");
+            throw new RuntimeException("Content size limit exceeded. You have " + remainingBytes + " bytes remaining out of " + MAX_TOTAL_SIZE_PER_USER_PER_QUESTION + " bytes total.");
+        }
+
         Approach approach = new Approach();
         approach.setQuestion(question);
         approach.setUser(user);
-        approach.setTextContent(approachDTO.getTextContent());
-        approach.setCodeContent(approachDTO.getCodeContent());
+        approach.setTextContent(textContent);
+        approach.setCodeContent(codeContent);
         approach.setCodeLanguage(approachDTO.getCodeLanguage() != null ? 
                 approachDTO.getCodeLanguage() : "javascript");
 
         // Calculate and set content size
-        int contentSize = calculateContentSize(approachDTO.getTextContent(), approachDTO.getCodeContent());
+        int contentSize = calculateContentSize(textContent, codeContent);
         approach.setContentSize(contentSize);
 
         Approach savedApproach = approachRepository.save(approach);
         return ApproachDTO.fromEntity(savedApproach);
     }
 
-    // Update approach
+    // UPDATED: Update approach with size validation
     public ApproachDTO updateApproach(String id, ApproachDTO approachDTO) {
         Approach approach = approachRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Approach not found"));
 
-        approach.setTextContent(approachDTO.getTextContent());
-        approach.setCodeContent(approachDTO.getCodeContent());
+        // Check size limits for update (excluding current approach)
+        String textContent = approachDTO.getTextContent();
+        String codeContent = approachDTO.getCodeContent();
+        
+        Map<String, Object> sizeCheck = checkSizeLimits(
+            approach.getUser().getId(), 
+            approach.getQuestion().getId(), 
+            textContent, 
+            codeContent, 
+            id
+        );
+        
+        if (!(Boolean) sizeCheck.get("canAdd")) {
+            int remainingBytes = (Integer) sizeCheck.get("remainingBytes");
+            throw new RuntimeException("Content size limit exceeded. You have " + remainingBytes + " bytes remaining out of " + MAX_TOTAL_SIZE_PER_USER_PER_QUESTION + " bytes total.");
+        }
+
+        approach.setTextContent(textContent);
+        approach.setCodeContent(codeContent);
         if (approachDTO.getCodeLanguage() != null) {
             approach.setCodeLanguage(approachDTO.getCodeLanguage());
         }
 
         // Recalculate content size
-        int contentSize = calculateContentSize(approachDTO.getTextContent(), approachDTO.getCodeContent());
+        int contentSize = calculateContentSize(textContent, codeContent);
         approach.setContentSize(contentSize);
 
         Approach updatedApproach = approachRepository.save(approach);
@@ -128,6 +158,33 @@ public class ApproachService {
         result.put("totalSizeAfterUpdate", totalSizeAfterUpdate);
         result.put("maxAllowedSize", MAX_TOTAL_SIZE_PER_USER_PER_QUESTION);
         result.put("remainingBytes", Math.max(0, remainingBytes));
+        
+        return result;
+    }
+
+    // NEW: Check both count and size limits for approaches
+    public Map<String, Object> checkApproachLimits(String userId, String questionId, 
+                                                   String textContent, String codeContent, String excludeApproachId) {
+        Map<String, Object> result = new HashMap<>();
+        
+        // Check count limit
+        long existingCount = approachRepository.countByQuestion_IdAndUser_Id(questionId, userId);
+        boolean canAddCount = existingCount < MAX_APPROACHES_PER_QUESTION;
+        
+        // Check size limits
+        Map<String, Object> sizeLimits = checkSizeLimits(userId, questionId, textContent, codeContent, excludeApproachId);
+        boolean canAddSize = (Boolean) sizeLimits.get("canAdd");
+        
+        // Combine results
+        result.put("canAdd", canAddCount && canAddSize);
+        result.put("canAddCount", canAddCount);
+        result.put("canAddSize", canAddSize);
+        result.put("currentCount", existingCount);
+        result.put("maxCount", MAX_APPROACHES_PER_QUESTION);
+        result.put("remainingCount", Math.max(0, MAX_APPROACHES_PER_QUESTION - existingCount));
+        
+        // Include size information
+        result.putAll(sizeLimits);
         
         return result;
     }

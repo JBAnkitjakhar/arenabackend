@@ -1,4 +1,5 @@
 // src/main/java/com/algoarena/config/SecurityConfig.java
+// need update in prod at line 101, 119, 142
 package com.algoarena.config;
 
 import com.algoarena.security.JwtAuthenticationFilter;
@@ -138,7 +139,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(); // i think i dont need this , becuase we dont use email andpassword logins
     }
 
     @Bean

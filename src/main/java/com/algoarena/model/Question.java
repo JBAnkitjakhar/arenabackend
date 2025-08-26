@@ -17,7 +17,7 @@ public class Question {
     private String title;
     private String statement;
     
-    // NEW: Image URLs for question explanation
+    // Image URLs for question explanation
     private List<String> imageUrls;
     
     // Keep for backward compatibility (will be migrated to imageUrls)

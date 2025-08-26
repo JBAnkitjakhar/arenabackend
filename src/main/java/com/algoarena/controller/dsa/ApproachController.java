@@ -204,7 +204,33 @@ public class ApproachController {
     }
 
     /**
-     * Check size limits before creating/updating approach
+     * UPDATED: Check both count and size limits before creating/updating approach
+     */
+    @PostMapping("/question/{questionId}/check-limits")
+    public ResponseEntity<Map<String, Object>> checkApproachLimits(
+            @PathVariable String questionId,
+            @RequestBody Map<String, String> content,
+            @RequestParam(required = false) String excludeApproachId,
+            Authentication authentication
+    ) {
+        User currentUser = (User) authentication.getPrincipal();
+        
+        String textContent = content.get("textContent");
+        String codeContent = content.get("codeContent");
+        
+        Map<String, Object> limits = approachService.checkApproachLimits(
+            currentUser.getId(), 
+            questionId, 
+            textContent, 
+            codeContent, 
+            excludeApproachId
+        );
+        
+        return ResponseEntity.ok(limits);
+    }
+
+    /**
+     * DEPRECATED: Use check-limits instead (kept for backward compatibility)
      */
     @PostMapping("/question/{questionId}/check-size")
     public ResponseEntity<Map<String, Object>> checkSizeLimits(

@@ -1,4 +1,5 @@
 // src/main/java/com/algoarena/exception/GlobalExceptionHandler.java
+
 package com.algoarena.exception;
 
 import org.springframework.http.HttpStatus;

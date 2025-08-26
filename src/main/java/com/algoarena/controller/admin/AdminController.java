@@ -2,7 +2,7 @@
 
 package com.algoarena.controller.admin;
 
-import com.algoarena.service.admin.AdminService;  // ADD THIS IMPORT
+import com.algoarena.service.admin.AdminService;  
 import com.algoarena.service.dsa.UserProgressService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +17,7 @@ import java.util.Map;
 public class AdminController {
 
     @Autowired
-    private AdminService adminService;  // Now this will work
+    private AdminService adminService;   
 
     @Autowired
     private UserProgressService userProgressService;
