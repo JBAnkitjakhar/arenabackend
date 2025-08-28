@@ -80,10 +80,7 @@ Once running, visit:
 
 
 # application-local.properties
-
-
-# Copy this file to application-local.properties and fill in your actual values
-# This template file is safe to commit - it contains no real secrets
+// and i already add real secrets so dont worry
 
 # MongoDB Atlas Configuration - Replace with your actual connection string
 spring.data.mongodb.uri=mongodb+srv://USERNAME:PASSWORD@CLUSTER.mongodb.net/DATABASE_NAME?retryWrites=true&w=majority&appName=CLUSTER_NAME
