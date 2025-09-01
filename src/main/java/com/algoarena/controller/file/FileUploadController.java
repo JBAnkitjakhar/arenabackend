@@ -3,6 +3,7 @@ package com.algoarena.controller.file;
 
 import com.algoarena.service.file.CloudinaryService;
 import com.algoarena.service.file.VisualizerService;
+import com.algoarena.service.dsa.SolutionService; // ADD THIS IMPORT
 import org.springframework.http.HttpStatus;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -25,13 +26,19 @@ public class FileUploadController {
 
     private final CloudinaryService cloudinaryService;
     private final VisualizerService visualizerService;
+    private final SolutionService solutionService; // ADD THIS LINE
 
-    public FileUploadController(CloudinaryService cloudinaryService, VisualizerService visualizerService) {
+    // UPDATE CONSTRUCTOR TO INCLUDE SolutionService
+    public FileUploadController(CloudinaryService cloudinaryService, 
+                               VisualizerService visualizerService,
+                               SolutionService solutionService) {
         this.cloudinaryService = cloudinaryService;
         this.visualizerService = visualizerService;
+        this.solutionService = solutionService; // ADD THIS LINE
     }
 
     // ==================== IMAGE UPLOAD ENDPOINTS ====================
+    // ... keep all existing image methods unchanged ...
 
     /**
      * Upload image for question (Admin only)
@@ -180,7 +187,7 @@ public class FileUploadController {
     // ==================== HTML VISUALIZER ENDPOINTS ====================
 
     /**
-     * Upload HTML visualizer file (Admin only)
+     * UPDATED: Upload HTML visualizer file and link to solution (Admin only)
      */
     @PostMapping("/visualizers/{solutionId}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
@@ -202,11 +209,28 @@ public class FileUploadController {
                 return ResponseEntity.badRequest().body(response);
             }
 
+            // STEP 1: Upload file to GridFS
             Map<String, Object> result = visualizerService.uploadVisualizerFile(file, solutionId);
+            String fileId = (String) result.get("fileId");
+
+            // STEP 2: CRITICAL FIX - Link the file to the solution
+            try {
+                solutionService.addVisualizerToSolution(solutionId, fileId);
+                System.out.println("Successfully linked visualizer " + fileId + " to solution " + solutionId);
+            } catch (Exception e) {
+                // If solution linking fails, clean up the uploaded file
+                System.err.println("Failed to link visualizer to solution, cleaning up file: " + e.getMessage());
+                try {
+                    visualizerService.deleteVisualizerFile(fileId);
+                } catch (Exception cleanupError) {
+                    System.err.println("Failed to cleanup file after linking failure: " + cleanupError.getMessage());
+                }
+                throw new RuntimeException("Failed to link visualizer to solution: " + e.getMessage());
+            }
 
             response.put("success", true);
             response.put("data", result);
-            response.put("message", "Visualizer file uploaded successfully");
+            response.put("message", "Visualizer file uploaded successfully and linked to solution");
 
             return ResponseEntity.status(201).body(response);
 
@@ -368,7 +392,7 @@ public class FileUploadController {
     }
 
     /**
-     * Delete visualizer file (Admin only)
+     * UPDATED: Delete visualizer file and unlink from solution (Admin only)
      */
     @DeleteMapping("/visualizers/{fileId}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
@@ -382,10 +406,26 @@ public class FileUploadController {
                 return ResponseEntity.badRequest().body(response);
             }
 
+            // STEP 1: Get file metadata to find the solution ID
+            Map<String, Object> metadata = visualizerService.getVisualizerMetadata(fileId);
+            String solutionId = (String) metadata.get("solutionId");
+
+            // STEP 2: Remove from solution's visualizerFileIds array
+            if (solutionId != null) {
+                try {
+                    solutionService.removeVisualizerFromSolution(solutionId, fileId);
+                    System.out.println("Successfully unlinked visualizer " + fileId + " from solution " + solutionId);
+                } catch (Exception e) {
+                    System.err.println("Failed to unlink visualizer from solution: " + e.getMessage());
+                    // Continue with file deletion even if solution update fails
+                }
+            }
+
+            // STEP 3: Delete the file from GridFS
             visualizerService.deleteVisualizerFile(fileId);
 
             response.put("success", true);
-            response.put("message", "Visualizer file deleted successfully");
+            response.put("message", "Visualizer file deleted successfully and unlinked from solution");
             response.put("fileId", fileId);
 
             return ResponseEntity.ok(response);
@@ -399,6 +439,7 @@ public class FileUploadController {
     }
 
     // ==================== HEALTH CHECK ENDPOINTS ====================
+    // ... keep all existing health check methods unchanged ...
 
     /**
      * Test Cloudinary connection

@@ -52,8 +52,10 @@ public class VisualizerService {
         // System.out.println("Uploading HTML file:");
         // System.out.println("Original size: " + htmlContent.length() + " chars");
         // System.out.println("Processed size: " + processedHtml.length() + " chars");
-        // System.out.println("Has <style>: " + processedHtml.toLowerCase().contains("<style"));
-        // System.out.println("Has <script>: " + processedHtml.toLowerCase().contains("<script"));
+        // System.out.println("Has <style>: " +
+        // processedHtml.toLowerCase().contains("<style"));
+        // System.out.println("Has <script>: " +
+        // processedHtml.toLowerCase().contains("<script"));
 
         // Generate unique filename
         String filename = "visualizer_" + solutionId + "_" + UUID.randomUUID().toString() + ".html";
@@ -113,10 +115,14 @@ public class VisualizerService {
             }
 
             // System.out.println("Educational HTML processing complete:");
-            // System.out.println("Original had <script>: " + htmlContent.toLowerCase().contains("<script"));
-            // System.out.println("Processed has <script>: " + processedContent.toLowerCase().contains("<script"));
-            // System.out.println("Original had <style>: " + htmlContent.toLowerCase().contains("<style"));
-            // System.out.println("Processed has <style>: " + processedContent.toLowerCase().contains("<style"));
+            // System.out.println("Original had <script>: " +
+            // htmlContent.toLowerCase().contains("<script"));
+            // System.out.println("Processed has <script>: " +
+            // processedContent.toLowerCase().contains("<script"));
+            // System.out.println("Original had <style>: " +
+            // htmlContent.toLowerCase().contains("<style"));
+            // System.out.println("Processed has <style>: " +
+            // processedContent.toLowerCase().contains("<style"));
 
             return processedContent;
 
@@ -202,7 +208,8 @@ public class VisualizerService {
 
         try (InputStream inputStream = resource.getInputStream()) {
             String rawContent = new String(inputStream.readAllBytes());
-            // System.out.println("Retrieved raw content: " + rawContent.length() + " chars");
+            // System.out.println("Retrieved raw content: " + rawContent.length() + "
+            // chars");
             return rawContent;
         }
     }
@@ -297,6 +304,37 @@ public class VisualizerService {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> files = (List<Map<String, Object>>) result.get("files");
         return files;
+    }
+
+    /**
+     * Delete all visualizer files for a solution in one operation
+     */
+    public void deleteAllVisualizersForSolution(String solutionId) {
+        try {
+            Query query = Query.query(Criteria.where("metadata.solutionId").is(solutionId));
+
+            // Get count for logging
+            var files = gridFsTemplate.find(query);
+            var fileList = files.into(new java.util.ArrayList<>());
+            int fileCount = fileList.size();
+
+            if (fileCount == 0) {
+                System.out.println("No visualizer files found for solution: " + solutionId);
+                return;
+            }
+
+            System.out.println("Deleting " + fileCount + " visualizer files for solution: " + solutionId);
+
+            // Delete all files in one operation
+            gridFsTemplate.delete(query);
+
+            System.out
+                    .println("Successfully deleted all " + fileCount + " visualizer files for solution: " + solutionId);
+
+        } catch (Exception e) {
+            System.err.println("Failed to delete visualizer files for solution " + solutionId + ": " + e.getMessage());
+            throw new RuntimeException("Failed to delete visualizer files for solution: " + solutionId, e);
+        }
     }
 
     /**

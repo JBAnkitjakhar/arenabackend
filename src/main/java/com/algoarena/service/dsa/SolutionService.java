@@ -7,6 +7,7 @@ import com.algoarena.model.Question;
 import com.algoarena.model.User;
 import com.algoarena.repository.SolutionRepository;
 import com.algoarena.repository.QuestionRepository;
+import com.algoarena.service.file.VisualizerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +25,9 @@ public class SolutionService {
 
     @Autowired
     private QuestionRepository questionRepository;
+
+    @Autowired
+    private VisualizerService visualizerService;
 
     // Get solution by ID
     public SolutionDTO getSolutionById(String id) {
@@ -112,7 +116,18 @@ public class SolutionService {
         if (!solutionRepository.existsById(id)) {
             throw new RuntimeException("Solution not found");
         }
+
+        // STEP 1: Delete all associated visualizer HTML files first
+        try {
+            visualizerService.deleteAllVisualizersForSolution(id);
+        } catch (Exception e) {
+            System.err.println("Failed to clean up visualizer files for solution " + id + ": " + e.getMessage());
+            // Continue with solution deletion even if file cleanup fails
+        }
+
+        // STEP 2: Delete the solution document
         solutionRepository.deleteById(id);
+        System.out.println("Successfully deleted solution: " + id);
     }
 
     // Check if solution exists
