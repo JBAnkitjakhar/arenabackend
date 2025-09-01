@@ -46,7 +46,7 @@ public class SecurityConfig {
     @Autowired
     private AppConfig appConfig;
 
-    @Bean
+   @Bean
 public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http
             .csrf(AbstractHttpConfigurer::disable)
@@ -63,10 +63,10 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                             "/error"
                     ).permitAll()
                     
-                    // ✅ VISUALIZER ACCESS (Authenticated users only) - MOVE THIS UP!
+                    // ✅ VISUALIZER ACCESS (Authenticated users only) - FIXED PATH PATTERN
                     .requestMatchers(
                             HttpMethod.GET,
-                            "/files/visualizers/*"  // Fixed: GET access to visualizer files
+                            "/files/visualizers/**"  // FIXED: Use /** for all sub-paths
                     ).authenticated()
                     
                     // ✅ ADMIN-ONLY ENDPOINTS 
@@ -77,9 +77,11 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                             "/solutions/question/*/create",
                             "/solutions/*/update",
                             "/solutions/*/delete",
-                            "/files/images/**",            // Image uploads (admin only)
-                            "/files/visualizers/*/upload", // Visualizer uploads (admin only) 
-                            "/files/visualizers/*/delete"  // Visualizer deletes (admin only)
+                            "/files/images/**",                  // Image uploads (admin only)
+                            "/files/visualizers/*/upload",      // Visualizer uploads (admin only) 
+                            "/files/visualizers/*/delete",      // Visualizer deletes (admin only)
+                            "/files/visualizers/*/metadata",    // Visualizer metadata (admin only)
+                            "/files/visualizers/*/download"     // Visualizer downloads (admin only)
                     ).hasAnyRole("ADMIN", "SUPERADMIN")
                     
                     // ✅ OTHER AUTHENTICATED ENDPOINTS
@@ -90,7 +92,7 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                             "/approaches/**",
                             "/compiler/**",
                             "/users/**",
-                            "/files/solutions/*/visualizers"
+                            "/files/solutions/*/visualizers"    // List visualizers by solution
                     ).authenticated()
                     
                     .requestMatchers("/questions").permitAll()
@@ -102,7 +104,8 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
             .exceptionHandling(exceptions -> exceptions
                 .authenticationEntryPoint((request, response, authException) -> {
                     response.setStatus(401);
-                    response.getWriter().write("Authentication required");
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\":\"Authentication required\",\"message\":\"Please provide valid JWT token\"}");
                 })
             )
             .oauth2Login(oauth2 -> oauth2

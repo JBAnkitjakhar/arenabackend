@@ -230,40 +230,57 @@ public class FileUploadController {
     }
 
     /**
-     * Get HTML visualizer file content (Public - for rendering)
+     * FIXED: Get HTML visualizer file content with proper authentication and no duplicate CORS
      */
     @GetMapping("/visualizers/{fileId}")
-public ResponseEntity<String> getVisualizerFile(
-        @PathVariable String fileId, 
-        HttpServletRequest request) {
-    
-    try {
-        // Log for debugging
-        System.out.println("Accessing visualizer: " + fileId);
-        System.out.println("User authenticated: " + request.getUserPrincipal());
+    public ResponseEntity<String> getVisualizerFile(
+            @PathVariable String fileId, 
+            HttpServletRequest request) {
         
-        if (fileId == null || fileId.trim().isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .contentType(MediaType.TEXT_PLAIN)
-                    .body("Invalid file ID");
-        }
+        try {
+            // Enhanced logging for debugging
+            System.out.println("Accessing visualizer: " + fileId);
+            System.out.println("User authenticated: " + (request.getUserPrincipal() != null));
+            
+            if (fileId == null || fileId.trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .body("Invalid file ID");
+            }
 
-        String htmlContent = visualizerService.getVisualizerContent(fileId);
-        
-        return ResponseEntity.ok()
-                .contentType(MediaType.TEXT_HTML)
-                .header("X-Frame-Options", "SAMEORIGIN")
-                .header("X-Content-Type-Options", "nosniff")
-                .header("Cache-Control", "no-cache")
-                .body(htmlContent);
-                
-    } catch (Exception e) {
-        System.err.println("Error serving visualizer: " + e.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .contentType(MediaType.TEXT_PLAIN)
-                .body("Visualizer file not found");
+            String htmlContent = visualizerService.getVisualizerContent(fileId);
+            
+            // FIXED: Return with security headers but NO manual CORS headers
+            // Spring Security will handle CORS automatically
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    // Security headers for interactive educational content
+                    .header("X-Frame-Options", "SAMEORIGIN") // Allow embedding in your own site
+                    .header("X-Content-Type-Options", "nosniff")
+                    .header("Cache-Control", "public, max-age=3600") // Cache for performance
+                    // CSP that allows JavaScript but restricts network access
+                    .header("Content-Security-Policy", 
+                        "default-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+                        "img-src 'self' data: https: blob:; " +
+                        "connect-src 'none'; " + // Block external network requests
+                        "form-action 'none'; " + // Block form submissions  
+                        "frame-ancestors 'self'; " +
+                        "object-src 'none'; " + // Block plugins
+                        "base-uri 'self'") // Restrict base URI
+                    .header("X-XSS-Protection", "1; mode=block")
+                    .header("Referrer-Policy", "strict-origin-when-cross-origin")
+                    // REMOVED: Manual CORS headers - let Spring Security handle it
+                    .body(htmlContent);
+                    
+        } catch (Exception e) {
+            System.err.println("Error serving visualizer: " + e.getMessage());
+            e.printStackTrace();
+            
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .body("Visualizer file not found: " + e.getMessage());
+        }
     }
-}
 
     /**
      * Get visualizer file as downloadable resource (Admin only)
@@ -326,7 +343,7 @@ public ResponseEntity<String> getVisualizerFile(
     }
 
     /**
-     * List all visualizer files for a solution
+     * ENHANCED: List all visualizer files for a solution
      */
     @GetMapping("/solutions/{solutionId}/visualizers")
     public ResponseEntity<Map<String, Object>> getVisualizersBySolution(@PathVariable String solutionId) {
@@ -339,11 +356,12 @@ public ResponseEntity<String> getVisualizerFile(
                 return ResponseEntity.badRequest().body(response);
             }
 
-            List<Map<String, Object>> visualizers = visualizerService.getVisualizerFilesBySolution(solutionId);
+            // ENHANCED: Use the new method that returns proper structure
+            Map<String, Object> result = visualizerService.listVisualizersBySolution(solutionId);
             
             response.put("success", true);
-            response.put("data", visualizers);
-            response.put("count", visualizers.size());
+            response.put("data", (List<?>) result.get("files"));
+            response.put("count", result.get("count"));
             response.put("solutionId", solutionId);
             
             return ResponseEntity.ok(response);
@@ -448,7 +466,7 @@ public ResponseEntity<String> getVisualizerFile(
     }
 
     /**
-     * Get file upload limits and configuration
+     * ENHANCED: Get file upload limits and configuration with interactive HTML info
      */
     @GetMapping("/config")
     public ResponseEntity<Map<String, Object>> getFileUploadConfig() {
@@ -463,13 +481,27 @@ public ResponseEntity<String> getVisualizerFile(
         imageConfig.put("maxPerQuestion", 5);
         imageConfig.put("maxPerSolution", 10);
         
-        // HTML configuration
+        // ENHANCED: HTML configuration with interactive features info
         Map<String, Object> htmlConfig = new HashMap<>();
         htmlConfig.put("maxSize", "500KB");
         htmlConfig.put("maxSizeBytes", 500 * 1024);
         htmlConfig.put("allowedTypes", List.of("text/html"));
         htmlConfig.put("allowedExtensions", List.of(".html"));
         htmlConfig.put("maxPerSolution", 2);
+        htmlConfig.put("interactiveSupport", true);
+        htmlConfig.put("supportedFeatures", List.of(
+            "JavaScript animations",
+            "Canvas rendering", 
+            "SVG graphics",
+            "Interactive buttons",
+            "Educational visualizations"
+        ));
+        htmlConfig.put("securityMeasures", List.of(
+            "Content Security Policy",
+            "XSS Protection",
+            "Network isolation",
+            "Safe sandboxing"
+        ));
         
         config.put("images", imageConfig);
         config.put("html", htmlConfig);
