@@ -3,7 +3,7 @@ package com.algoarena.controller.file;
 
 import com.algoarena.service.file.CloudinaryService;
 import com.algoarena.service.file.VisualizerService;
-import org.springframework.http.HttpStatus; 
+import org.springframework.http.HttpStatus;
 import jakarta.servlet.http.HttpServletRequest;
 
 // import org.springframework.beans.factory.annotation.Autowired;
@@ -39,10 +39,9 @@ public class FileUploadController {
     @PostMapping("/images/questions")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> uploadQuestionImage(
-            @RequestParam("image") MultipartFile file
-    ) {
+            @RequestParam("image") MultipartFile file) {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             // Validate file before upload
             if (file.isEmpty()) {
@@ -52,19 +51,19 @@ public class FileUploadController {
             }
 
             Map<String, Object> result = cloudinaryService.uploadQuestionImage(file);
-            
+
             response.put("success", true);
             response.put("data", result);
             response.put("message", "Question image uploaded successfully");
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (IllegalArgumentException e) {
             response.put("success", false);
             response.put("error", "Validation failed");
             response.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(response);
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("error", "Image upload failed");
@@ -79,10 +78,9 @@ public class FileUploadController {
     @PostMapping("/images/solutions")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> uploadSolutionImage(
-            @RequestParam("image") MultipartFile file
-    ) {
+            @RequestParam("image") MultipartFile file) {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             if (file.isEmpty()) {
                 response.put("success", false);
@@ -91,19 +89,19 @@ public class FileUploadController {
             }
 
             Map<String, Object> result = cloudinaryService.uploadSolutionImage(file);
-            
+
             response.put("success", true);
             response.put("data", result);
             response.put("message", "Solution image uploaded successfully");
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (IllegalArgumentException e) {
             response.put("success", false);
             response.put("error", "Validation failed");
             response.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(response);
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("error", "Image upload failed");
@@ -118,10 +116,9 @@ public class FileUploadController {
     @DeleteMapping("/images")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> deleteImage(
-            @RequestParam String publicId
-    ) {
+            @RequestParam String publicId) {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             if (publicId == null || publicId.trim().isEmpty()) {
                 response.put("success", false);
@@ -130,13 +127,13 @@ public class FileUploadController {
             }
 
             Map<String, Object> result = cloudinaryService.deleteImage(publicId);
-            
+
             response.put("success", true);
             response.put("data", result);
             response.put("message", "Image deleted successfully");
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("error", "Image deletion failed");
@@ -152,10 +149,9 @@ public class FileUploadController {
     public ResponseEntity<Map<String, Object>> generateThumbnail(
             @RequestParam String imageUrl,
             @RequestParam(defaultValue = "300") int width,
-            @RequestParam(defaultValue = "200") int height
-    ) {
+            @RequestParam(defaultValue = "200") int height) {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             if (imageUrl == null || imageUrl.trim().isEmpty()) {
                 response.put("success", false);
@@ -164,15 +160,15 @@ public class FileUploadController {
             }
 
             String thumbnailUrl = cloudinaryService.generateThumbnailUrl(imageUrl, width, height);
-            
+
             response.put("success", true);
             response.put("originalUrl", imageUrl);
             response.put("thumbnailUrl", thumbnailUrl);
             response.put("width", width);
             response.put("height", height);
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("error", "Thumbnail generation failed");
@@ -190,10 +186,9 @@ public class FileUploadController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> uploadVisualizerFile(
             @PathVariable String solutionId,
-            @RequestParam("visualizer") MultipartFile file
-    ) {
+            @RequestParam("visualizer") MultipartFile file) {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             if (file.isEmpty()) {
                 response.put("success", false);
@@ -208,19 +203,19 @@ public class FileUploadController {
             }
 
             Map<String, Object> result = visualizerService.uploadVisualizerFile(file, solutionId);
-            
+
             response.put("success", true);
             response.put("data", result);
             response.put("message", "Visualizer file uploaded successfully");
-            
+
             return ResponseEntity.status(201).body(response);
-            
+
         } catch (IllegalArgumentException e) {
             response.put("success", false);
             response.put("error", "Validation failed");
             response.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(response);
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("error", "Visualizer upload failed");
@@ -230,52 +225,50 @@ public class FileUploadController {
     }
 
     /**
-     * FIXED: Get HTML visualizer file content with proper authentication and no duplicate CORS
+     * ALTERNATIVE APPROACH: Serve raw HTML content without any processing
+     * This bypasses all sanitization issues for trusted educational content
      */
     @GetMapping("/visualizers/{fileId}")
     public ResponseEntity<String> getVisualizerFile(
-            @PathVariable String fileId, 
+            @PathVariable String fileId,
             HttpServletRequest request) {
-        
+
         try {
-            // Enhanced logging for debugging
-            System.out.println("Accessing visualizer: " + fileId);
-            System.out.println("User authenticated: " + (request.getUserPrincipal() != null));
-            
+            // System.out.println("Accessing visualizer: " + fileId);
+            // System.out.println("User authenticated: " + (request.getUserPrincipal() != null));
+
             if (fileId == null || fileId.trim().isEmpty()) {
                 return ResponseEntity.badRequest()
                         .contentType(MediaType.TEXT_PLAIN)
                         .body("Invalid file ID");
             }
 
-            String htmlContent = visualizerService.getVisualizerContent(fileId);
-            
-            // FIXED: Return with security headers but NO manual CORS headers
-            // Spring Security will handle CORS automatically
+            // GET RAW CONTENT WITHOUT ANY PROCESSING
+            String htmlContent = visualizerService.getRawVisualizerContent(fileId);
+
+            // System.out.println("Raw HTML size: " + htmlContent.length() + " chars");
+            // System.out.println("Contains <style>: " + htmlContent.toLowerCase().contains("<style"));
+            // System.out.println("Contains <script>: " + htmlContent.toLowerCase().contains("<script"));
+
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
-                    // Security headers for interactive educational content
-                    .header("X-Frame-Options", "SAMEORIGIN") // Allow embedding in your own site
+                    // MINIMAL SECURITY HEADERS - DON'T BLOCK INLINE CONTENT
+                    .header("X-Frame-Options", "SAMEORIGIN")
                     .header("X-Content-Type-Options", "nosniff")
-                    .header("Cache-Control", "public, max-age=3600") // Cache for performance
-                    // CSP that allows JavaScript but restricts network access
-                    .header("Content-Security-Policy", 
-                        "default-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-                        "img-src 'self' data: https: blob:; " +
-                        "connect-src 'none'; " + // Block external network requests
-                        "form-action 'none'; " + // Block form submissions  
-                        "frame-ancestors 'self'; " +
-                        "object-src 'none'; " + // Block plugins
-                        "base-uri 'self'") // Restrict base URI
-                    .header("X-XSS-Protection", "1; mode=block")
-                    .header("Referrer-Policy", "strict-origin-when-cross-origin")
-                    // REMOVED: Manual CORS headers - let Spring Security handle it
+                    .header("Cache-Control", "public, max-age=3600")
+                    // RELAXED CSP FOR EDUCATIONAL CONTENT
+                    .header("Content-Security-Policy",
+                            "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; " +
+                                    "img-src 'self' data: https: blob:; " +
+                                    "connect-src 'self'; " + // Allow some connections for educational demos
+                                    "form-action 'self'; " +
+                                    "frame-ancestors 'self'")
                     .body(htmlContent);
-                    
+
         } catch (Exception e) {
             System.err.println("Error serving visualizer: " + e.getMessage());
             e.printStackTrace();
-            
+
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .contentType(MediaType.TEXT_PLAIN)
                     .body("Visualizer file not found: " + e.getMessage());
@@ -295,18 +288,18 @@ public class FileUploadController {
 
             Resource resource = visualizerService.getVisualizerFile(fileId);
             Map<String, Object> metadata = visualizerService.getVisualizerMetadata(fileId);
-            
+
             String filename = (String) metadata.get("originalFileName");
             if (filename == null || filename.trim().isEmpty()) {
                 filename = "visualizer_" + fileId + ".html";
             }
-            
+
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, 
-                           "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + filename + "\"")
                     .body(resource);
-                    
+
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
@@ -319,7 +312,7 @@ public class FileUploadController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> getVisualizerMetadata(@PathVariable String fileId) {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             if (fileId == null || fileId.trim().isEmpty()) {
                 response.put("success", false);
@@ -328,12 +321,12 @@ public class FileUploadController {
             }
 
             Map<String, Object> metadata = visualizerService.getVisualizerMetadata(fileId);
-            
+
             response.put("success", true);
             response.put("data", metadata);
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("error", "Failed to get metadata");
@@ -348,7 +341,7 @@ public class FileUploadController {
     @GetMapping("/solutions/{solutionId}/visualizers")
     public ResponseEntity<Map<String, Object>> getVisualizersBySolution(@PathVariable String solutionId) {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             if (solutionId == null || solutionId.trim().isEmpty()) {
                 response.put("success", false);
@@ -358,14 +351,14 @@ public class FileUploadController {
 
             // ENHANCED: Use the new method that returns proper structure
             Map<String, Object> result = visualizerService.listVisualizersBySolution(solutionId);
-            
+
             response.put("success", true);
             response.put("data", (List<?>) result.get("files"));
             response.put("count", result.get("count"));
             response.put("solutionId", solutionId);
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("error", "Failed to get visualizers");
@@ -381,7 +374,7 @@ public class FileUploadController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> deleteVisualizerFile(@PathVariable String fileId) {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             if (fileId == null || fileId.trim().isEmpty()) {
                 response.put("success", false);
@@ -390,13 +383,13 @@ public class FileUploadController {
             }
 
             visualizerService.deleteVisualizerFile(fileId);
-            
+
             response.put("success", true);
             response.put("message", "Visualizer file deleted successfully");
             response.put("fileId", fileId);
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("error", "Visualizer deletion failed");
@@ -414,24 +407,24 @@ public class FileUploadController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> testCloudinaryConnection() {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             boolean isHealthy = cloudinaryService.testConnection();
-            
+
             response.put("success", isHealthy);
             response.put("service", "cloudinary");
             response.put("status", isHealthy ? "healthy" : "unhealthy");
             response.put("timestamp", System.currentTimeMillis());
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("service", "cloudinary");
             response.put("status", "error");
             response.put("message", e.getMessage());
             response.put("timestamp", System.currentTimeMillis());
-            
+
             return ResponseEntity.status(503).body(response);
         }
     }
@@ -443,24 +436,24 @@ public class FileUploadController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> testGridFSConnection() {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             boolean isHealthy = visualizerService.testConnection();
-            
+
             response.put("success", isHealthy);
             response.put("service", "gridfs");
             response.put("status", isHealthy ? "healthy" : "unhealthy");
             response.put("timestamp", System.currentTimeMillis());
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("service", "gridfs");
             response.put("status", "error");
             response.put("message", e.getMessage());
             response.put("timestamp", System.currentTimeMillis());
-            
+
             return ResponseEntity.status(503).body(response);
         }
     }
@@ -471,7 +464,7 @@ public class FileUploadController {
     @GetMapping("/config")
     public ResponseEntity<Map<String, Object>> getFileUploadConfig() {
         Map<String, Object> config = new HashMap<>();
-        
+
         // Image configuration
         Map<String, Object> imageConfig = new HashMap<>();
         imageConfig.put("maxSize", "2MB");
@@ -480,7 +473,7 @@ public class FileUploadController {
         imageConfig.put("allowedExtensions", List.of(".jpg", ".jpeg", ".png", ".gif", ".webp"));
         imageConfig.put("maxPerQuestion", 5);
         imageConfig.put("maxPerSolution", 10);
-        
+
         // ENHANCED: HTML configuration with interactive features info
         Map<String, Object> htmlConfig = new HashMap<>();
         htmlConfig.put("maxSize", "500KB");
@@ -490,27 +483,25 @@ public class FileUploadController {
         htmlConfig.put("maxPerSolution", 2);
         htmlConfig.put("interactiveSupport", true);
         htmlConfig.put("supportedFeatures", List.of(
-            "JavaScript animations",
-            "Canvas rendering", 
-            "SVG graphics",
-            "Interactive buttons",
-            "Educational visualizations"
-        ));
+                "JavaScript animations",
+                "Canvas rendering",
+                "SVG graphics",
+                "Interactive buttons",
+                "Educational visualizations"));
         htmlConfig.put("securityMeasures", List.of(
-            "Content Security Policy",
-            "XSS Protection",
-            "Network isolation",
-            "Safe sandboxing"
-        ));
-        
+                "Content Security Policy",
+                "XSS Protection",
+                "Network isolation",
+                "Safe sandboxing"));
+
         config.put("images", imageConfig);
         config.put("html", htmlConfig);
         config.put("timestamp", System.currentTimeMillis());
-        
+
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("data", config);
-        
+
         return ResponseEntity.ok(response);
     }
 
@@ -521,26 +512,26 @@ public class FileUploadController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> getFileUploadStats() {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             Map<String, Object> stats = new HashMap<>();
-            
+
             // These would be implemented based on your needs
             stats.put("totalImagesUploaded", "Not implemented yet");
             stats.put("totalVisualizersUploaded", "Not implemented yet");
             stats.put("storageUsed", "Not implemented yet");
             stats.put("timestamp", System.currentTimeMillis());
-            
+
             response.put("success", true);
             response.put("data", stats);
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("error", "Failed to get statistics");
             response.put("message", e.getMessage());
-            
+
             return ResponseEntity.status(500).body(response);
         }
     }
