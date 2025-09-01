@@ -59,6 +59,7 @@ public class CloudinaryService {
             
             Map<String, Object> uploadResult = new HashMap<>();
             uploadResult.put("url", result.get("secure_url"));
+            uploadResult.put("secure_url", result.get("secure_url"));
             uploadResult.put("public_id", result.get("public_id"));
             uploadResult.put("width", result.get("width"));
             uploadResult.put("height", result.get("height"));

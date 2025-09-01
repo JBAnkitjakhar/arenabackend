@@ -13,8 +13,6 @@ import com.algoarena.repository.CategoryRepository;
 import com.algoarena.repository.SolutionRepository;
 import com.algoarena.repository.ApproachRepository;
 import com.algoarena.repository.UserProgressRepository;
-// import com.algoarena.service.dsa.SolutionService;
-// import com.algoarena.service.dsa.UserProgressService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;

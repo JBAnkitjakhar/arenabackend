@@ -3,6 +3,9 @@ package com.algoarena.controller.file;
 
 import com.algoarena.service.file.CloudinaryService;
 import com.algoarena.service.file.VisualizerService;
+import org.springframework.http.HttpStatus; 
+import jakarta.servlet.http.HttpServletRequest;
+
 // import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -230,26 +233,37 @@ public class FileUploadController {
      * Get HTML visualizer file content (Public - for rendering)
      */
     @GetMapping("/visualizers/{fileId}")
-    public ResponseEntity<String> getVisualizerFile(@PathVariable String fileId) {
-        try {
-            if (fileId == null || fileId.trim().isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-
-            String htmlContent = visualizerService.getVisualizerContent(fileId);
-            
-            return ResponseEntity.ok()
-                    .contentType(MediaType.TEXT_HTML)
-                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
-                    .header("X-Frame-Options", "SAMEORIGIN")
-                    .header("X-Content-Type-Options", "nosniff")
-                    .header("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: https:;")
-                    .body(htmlContent);
-                    
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
+public ResponseEntity<String> getVisualizerFile(
+        @PathVariable String fileId, 
+        HttpServletRequest request) {
+    
+    try {
+        // Log for debugging
+        System.out.println("Accessing visualizer: " + fileId);
+        System.out.println("User authenticated: " + request.getUserPrincipal());
+        
+        if (fileId == null || fileId.trim().isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .body("Invalid file ID");
         }
+
+        String htmlContent = visualizerService.getVisualizerContent(fileId);
+        
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .header("X-Frame-Options", "SAMEORIGIN")
+                .header("X-Content-Type-Options", "nosniff")
+                .header("Cache-Control", "no-cache")
+                .body(htmlContent);
+                
+    } catch (Exception e) {
+        System.err.println("Error serving visualizer: " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.TEXT_PLAIN)
+                .body("Visualizer file not found");
     }
+}
 
     /**
      * Get visualizer file as downloadable resource (Admin only)
