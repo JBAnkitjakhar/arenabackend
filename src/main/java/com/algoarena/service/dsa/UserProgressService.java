@@ -1,7 +1,8 @@
-// src/main/java/com/algoarena/service/dsa/UserProgressService.java
+// src/main/java/com/algoarena/service/dsa/UserProgressService.java - COMPLETE with Redis Caching
 package com.algoarena.service.dsa;
 
 import com.algoarena.dto.dsa.UserProgressDTO;
+import com.algoarena.dto.dsa.UserProgressBulkDTO;
 import com.algoarena.model.UserProgress;
 import com.algoarena.model.Question;
 import com.algoarena.model.User;
@@ -10,6 +11,8 @@ import com.algoarena.repository.UserProgressRepository;
 import com.algoarena.repository.QuestionRepository;
 import com.algoarena.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,14 +37,90 @@ public class UserProgressService {
     @Autowired
     private UserRepository userRepository;
 
-    // Get progress by question and user
-    public UserProgressDTO getProgressByQuestionAndUser(String questionId, String userId) {
-        UserProgress progress = userProgressRepository.findByUser_IdAndQuestion_Id(userId, questionId)
-                .orElse(null);
-        return progress != null ? UserProgressDTO.fromEntity(progress) : null;
+    // ==================== CACHED BULK OPERATIONS ====================
+
+    /**
+     * Get ALL user progress as bulk data (REDIS CACHED)
+     * Cache key: user-progress::userId
+     * TTL: 1 hour
+     */
+    @Cacheable(value = "user-progress", key = "#userId")
+    public UserProgressBulkDTO getAllUserProgressBulk(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Get all progress for user
+        List<UserProgress> progressList = userProgressRepository.findByUser_Id(userId);
+        
+        // Build progress map
+        Map<String, UserProgressBulkDTO.QuestionProgressSummary> progressMap = new HashMap<>();
+        for (UserProgress progress : progressList) {
+            if (progress.getQuestion() != null) {
+                UserProgressBulkDTO.QuestionProgressSummary summary = 
+                    new UserProgressBulkDTO.QuestionProgressSummary(
+                        progress.isSolved(),
+                        progress.getLevel(),
+                        progress.getSolvedAt()
+                    );
+                progressMap.put(progress.getQuestion().getId(), summary);
+            }
+        }
+
+        // Calculate statistics
+        UserProgressBulkDTO.UserProgressStatsSummary stats = calculateProgressStats(userId);
+
+        // Create bulk DTO
+        UserProgressBulkDTO bulkDTO = new UserProgressBulkDTO(userId, user.getName());
+        bulkDTO.setProgressMap(progressMap);
+        bulkDTO.setStats(stats);
+        bulkDTO.setLastUpdated(LocalDateTime.now());
+
+        return bulkDTO;
     }
 
-    // Update user progress for a question
+    /**
+     * Quick check if user solved a specific question (REDIS CACHED)
+     */
+    @Cacheable(value = "user-progress", key = "#userId + ':' + #questionId")
+    public boolean hasUserSolvedQuestionCached(String userId, String questionId) {
+        return userProgressRepository.existsByUser_IdAndQuestion_IdAndSolvedTrue(userId, questionId);
+    }
+
+    /**
+     * Get user progress statistics with caching (REDIS CACHED)
+     */
+    @Cacheable(value = "user-progress-stats", key = "#userId")
+    public Map<String, Object> getUserProgressStats(String userId) {
+        return calculateUserStats(userId);
+    }
+
+    /**
+     * Get category progress for user (REDIS CACHED)
+     */
+    @Cacheable(value = "category-progress", key = "#userId + ':' + #categoryId")
+    public Map<String, Object> getUserCategoryProgress(String userId, String categoryId) {
+        return calculateCategoryProgress(userId, categoryId);
+    }
+
+    /**
+     * Get recent progress with caching (REDIS CACHED)
+     */
+    @Cacheable(value = "recent-progress", key = "#userId")
+    public List<UserProgressDTO> getRecentProgress(String userId) {
+        List<UserProgress> recentProgress = userProgressRepository.findTop10ByUser_IdAndSolvedTrueOrderBySolvedAtDesc(userId);
+        return recentProgress.stream()
+                .map(UserProgressDTO::fromEntity)
+                .toList();
+    }
+
+    // ==================== CACHE INVALIDATION OPERATIONS ====================
+
+    /**
+     * Update progress with cache eviction
+     */
+    @CacheEvict(value = {"user-progress", "user-progress-stats", "category-progress", "recent-progress"}, 
+                key = "#userId", 
+                condition = "#userId != null")
     public UserProgressDTO updateProgress(String questionId, String userId, boolean solved) {
         // Find question and user
         Question question = questionRepository.findById(questionId)
@@ -69,7 +148,20 @@ public class UserProgressService {
         return UserProgressDTO.fromEntity(savedProgress);
     }
 
-    // Get all progress for a user
+    // ==================== NON-CACHED OPERATIONS ====================
+
+    /**
+     * Get progress by question and user (non-cached for real-time accuracy)
+     */
+    public UserProgressDTO getProgressByQuestionAndUser(String questionId, String userId) {
+        UserProgress progress = userProgressRepository.findByUser_IdAndQuestion_Id(userId, questionId)
+                .orElse(null);
+        return progress != null ? UserProgressDTO.fromEntity(progress) : null;
+    }
+
+    /**
+     * Get all progress for a user (non-cached, used by admin)
+     */
     public List<UserProgressDTO> getAllProgressByUser(String userId) {
         List<UserProgress> progressList = userProgressRepository.findByUser_Id(userId);
         return progressList.stream()
@@ -77,7 +169,9 @@ public class UserProgressService {
                 .toList();
     }
 
-    // Get solved questions by user
+    /**
+     * Get solved questions by user
+     */
     public List<UserProgressDTO> getSolvedQuestionsByUser(String userId) {
         List<UserProgress> solvedQuestions = userProgressRepository.findByUser_IdAndSolvedTrue(userId);
         return solvedQuestions.stream()
@@ -85,8 +179,109 @@ public class UserProgressService {
                 .toList();
     }
 
-    // UPDATED: Get user progress statistics with streak and recentSolved
-    public Map<String, Object> getUserProgressStats(String userId) {
+    /**
+     * Check if user has solved a question (non-cached)
+     */
+    public boolean hasUserSolvedQuestion(String userId, String questionId) {
+        return userProgressRepository.existsByUser_IdAndQuestion_IdAndSolvedTrue(userId, questionId);
+    }
+
+    /**
+     * Get progress by question (all users)
+     */
+    public List<UserProgressDTO> getProgressByQuestion(String questionId) {
+        List<UserProgress> progressList = userProgressRepository.findByQuestion_Id(questionId);
+        return progressList.stream()
+                .map(UserProgressDTO::fromEntity)
+                .toList();
+    }
+
+    /**
+     * Count how many users solved a specific question
+     */
+    public long countUsersSolvedQuestion(String questionId) {
+        return userProgressRepository.countByQuestion_IdAndSolvedTrue(questionId);
+    }
+
+    /**
+     * Get global statistics
+     */
+    public Map<String, Object> getGlobalStats() {
+        Map<String, Object> stats = new HashMap<>();
+        
+        // Total solved questions across all users
+        long totalSolvedGlobally = userProgressRepository.countTotalSolvedQuestions();
+        stats.put("totalSolvedGlobally", totalSolvedGlobally);
+        
+        // Count distinct users who solved at least one question
+        long activeUsers = getDistinctActiveUsersCount();
+        stats.put("activeUsers", activeUsers);
+        
+        // Average questions solved per active user
+        if (activeUsers > 0) {
+            double avgQuestionsPerUser = (double) totalSolvedGlobally / activeUsers;
+            stats.put("averageQuestionsPerUser", Math.round(avgQuestionsPerUser * 100.0) / 100.0);
+        } else {
+            stats.put("averageQuestionsPerUser", 0.0);
+        }
+        
+        return stats;
+    }
+
+    /**
+     * Get user's rank/leaderboard position
+     */
+    public Map<String, Object> getUserRank(String userId) {
+        Map<String, Object> rankInfo = new HashMap<>();
+        
+        long userSolvedCount = userProgressRepository.countByUser_IdAndSolvedTrue(userId);
+        rankInfo.put("userSolvedCount", userSolvedCount);
+        rankInfo.put("rank", "Calculation needed"); // Placeholder
+        
+        return rankInfo;
+    }
+
+    /**
+     * Delete all progress for a question (used when question is deleted)
+     */
+    public void deleteAllProgressForQuestion(String questionId) {
+        userProgressRepository.deleteByQuestion_Id(questionId);
+    }
+
+    // ==================== HELPER METHODS FOR CACHED OPERATIONS ====================
+
+    /**
+     * Calculate progress stats for bulk DTO
+     */
+    private UserProgressBulkDTO.UserProgressStatsSummary calculateProgressStats(String userId) {
+        UserProgressBulkDTO.UserProgressStatsSummary stats = new UserProgressBulkDTO.UserProgressStatsSummary();
+        
+        // Count solved questions
+        int totalSolved = (int) userProgressRepository.countByUser_IdAndSolvedTrue(userId);
+        stats.setTotalSolved(totalSolved);
+        
+        // Total questions available
+        int totalQuestions = (int) questionRepository.count();
+        stats.setTotalQuestions(totalQuestions);
+        
+        // Progress percentage
+        double progressPercentage = totalQuestions > 0 ? (totalSolved * 100.0) / totalQuestions : 0.0;
+        stats.setProgressPercentage(Math.round(progressPercentage * 100.0) / 100.0);
+        
+        // Solved by level
+        Map<String, Integer> solvedByLevel = new HashMap<>();
+        solvedByLevel.put("easy", (int) userProgressRepository.countByUser_IdAndSolvedTrueAndLevel(userId, QuestionLevel.EASY));
+        solvedByLevel.put("medium", (int) userProgressRepository.countByUser_IdAndSolvedTrueAndLevel(userId, QuestionLevel.MEDIUM));
+        solvedByLevel.put("hard", (int) userProgressRepository.countByUser_IdAndSolvedTrueAndLevel(userId, QuestionLevel.HARD));
+        stats.setSolvedByLevel(solvedByLevel);
+        
+        return stats;
+    }
+
+    /**
+     * Calculate detailed user statistics
+     */
+    private Map<String, Object> calculateUserStats(String userId) {
         Map<String, Object> stats = new HashMap<>();
         
         // Total solved questions
@@ -125,68 +320,20 @@ public class UserProgressService {
         }
         stats.put("progressByLevel", progressByLevel);
         
-        // NEW: Calculate streak (simplified version)
+        // Calculate streak and recent solved
         int streak = calculateUserStreak(userId);
         stats.put("streak", streak);
         
-        // NEW: Recent solved count (last 7 days)
         int recentSolved = getRecentSolvedCount(userId, 7);
         stats.put("recentSolved", recentSolved);
         
         return stats;
     }
 
-    // Get recent progress (last 10 solved questions)
-    public List<UserProgressDTO> getRecentProgress(String userId) {
-        List<UserProgress> recentProgress = userProgressRepository.findTop10ByUser_IdAndSolvedTrueOrderBySolvedAtDesc(userId);
-        return recentProgress.stream()
-                .map(UserProgressDTO::fromEntity)
-                .toList();
-    }
-
-    // Check if user has solved a question
-    public boolean hasUserSolvedQuestion(String userId, String questionId) {
-        return userProgressRepository.existsByUser_IdAndQuestion_IdAndSolvedTrue(userId, questionId);
-    }
-
-    // Get progress by question (all users)
-    public List<UserProgressDTO> getProgressByQuestion(String questionId) {
-        List<UserProgress> progressList = userProgressRepository.findByQuestion_Id(questionId);
-        return progressList.stream()
-                .map(UserProgressDTO::fromEntity)
-                .toList();
-    }
-
-    // Count how many users solved a specific question
-    public long countUsersSolvedQuestion(String questionId) {
-        return userProgressRepository.countByQuestion_IdAndSolvedTrue(questionId);
-    }
-
-    // Get global statistics
-    public Map<String, Object> getGlobalStats() {
-        Map<String, Object> stats = new HashMap<>();
-        
-        // Total solved questions across all users
-        long totalSolvedGlobally = userProgressRepository.countTotalSolvedQuestions();
-        stats.put("totalSolvedGlobally", totalSolvedGlobally);
-        
-        // Count distinct users who solved at least one question
-        long activeUsers = getDistinctActiveUsersCount();
-        stats.put("activeUsers", activeUsers);
-        
-        // Average questions solved per active user
-        if (activeUsers > 0) {
-            double avgQuestionsPerUser = (double) totalSolvedGlobally / activeUsers;
-            stats.put("averageQuestionsPerUser", Math.round(avgQuestionsPerUser * 100.0) / 100.0);
-        } else {
-            stats.put("averageQuestionsPerUser", 0.0);
-        }
-        
-        return stats;
-    }
-
-    // Get user's progress on a specific category
-    public Map<String, Object> getUserCategoryProgress(String userId, String categoryId) {
+    /**
+     * Calculate category progress
+     */
+    private Map<String, Object> calculateCategoryProgress(String userId, String categoryId) {
         Map<String, Object> progress = new HashMap<>();
         
         // Get all questions in this category
@@ -219,31 +366,8 @@ public class UserProgressService {
         return progress;
     }
 
-    // Delete all progress for a question (used when question is deleted)
-    public void deleteAllProgressForQuestion(String questionId) {
-        userProgressRepository.deleteByQuestion_Id(questionId);
-    }
-
-    // Get user's rank/leaderboard position
-    public Map<String, Object> getUserRank(String userId) {
-        Map<String, Object> rankInfo = new HashMap<>();
-        
-        long userSolvedCount = userProgressRepository.countByUser_IdAndSolvedTrue(userId);
-        
-        // Count how many users have solved more questions (simplified ranking)
-        // This would need a more sophisticated query in a real implementation
-        
-        rankInfo.put("userSolvedCount", userSolvedCount);
-        rankInfo.put("rank", "Calculation needed"); // Placeholder
-        
-        return rankInfo;
-    }
-
-    // ==================== NEW HELPER METHODS ====================
-
     /**
-     * Calculate user's current streak (simplified version)
-     * This counts consecutive days with at least one solved question
+     * Calculate user's current streak
      */
     private int calculateUserStreak(String userId) {
         try {
@@ -253,7 +377,6 @@ public class UserProgressService {
                 return 0;
             }
             
-            // Simple streak calculation - consecutive days with at least one solve
             LocalDate today = LocalDate.now();
             LocalDate currentDate = today;
             int streak = 0;
@@ -274,7 +397,7 @@ public class UserProgressService {
             
             return streak;
         } catch (Exception e) {
-            return 0; // Return 0 if calculation fails
+            return 0;
         }
     }
 
@@ -291,13 +414,12 @@ public class UserProgressService {
                     .filter(progress -> progress.getSolvedAt() != null && progress.getSolvedAt().isAfter(cutoffDate))
                     .count();
         } catch (Exception e) {
-            return 0; // Return 0 if calculation fails
+            return 0;
         }
     }
 
     /**
      * Count distinct users who have solved at least one question
-     * This method handles the distinct count logic since MongoDB aggregation can be complex
      */
     private long getDistinctActiveUsersCount() {
         try {
@@ -312,7 +434,7 @@ public class UserProgressService {
             
             return distinctUserIds.size();
         } catch (Exception e) {
-            return 0; // Return 0 if calculation fails
+            return 0;
         }
     }
 }
