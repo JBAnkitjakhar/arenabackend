@@ -50,7 +50,7 @@
 //     ) {
 //         User currentUser = (User) authentication.getPrincipal();
 //         boolean solved = userProgressService.hasUserSolvedQuestionCached(currentUser.getId(), questionId);
-        
+
 //         Map<String, Boolean> response = new HashMap<>();
 //         response.put("solved", solved);
 //         return ResponseEntity.ok(response);
@@ -91,11 +91,11 @@
 //     ) {
 //         User currentUser = (User) authentication.getPrincipal();
 //         UserProgressDTO progress = userProgressService.getProgressByQuestionAndUser(questionId, currentUser.getId());
-        
+
 //         if (progress == null) {
 //             return ResponseEntity.notFound().build();
 //         }
-        
+
 //         return ResponseEntity.ok(progress);
 //     }
 
@@ -111,7 +111,7 @@
 //     ) {
 //         User currentUser = (User) authentication.getPrincipal();
 //         boolean solved = request.getOrDefault("solved", false);
-        
+
 //         try {
 //             UserProgressDTO updatedProgress = userProgressService.updateProgress(questionId, currentUser.getId(), solved);
 //             return ResponseEntity.ok(updatedProgress);
@@ -204,6 +204,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -246,15 +247,14 @@ public class UserProgressController {
     @GetMapping("/questions/{questionId}/progress")
     public ResponseEntity<UserProgressDTO> getQuestionProgress(
             @PathVariable String questionId,
-            Authentication authentication
-    ) {
+            Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
         UserProgressDTO progress = userProgressService.getProgressByQuestionAndUser(questionId, currentUser.getId());
-        
+
         if (progress == null) {
             return ResponseEntity.notFound().build();
         }
-        
+
         return ResponseEntity.ok(progress);
     }
 
@@ -266,13 +266,13 @@ public class UserProgressController {
     public ResponseEntity<UserProgressDTO> updateQuestionProgress(
             @PathVariable String questionId,
             @RequestBody Map<String, Boolean> request,
-            Authentication authentication
-    ) {
+            Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
         boolean solved = request.getOrDefault("solved", false);
-        
+
         try {
-            UserProgressDTO updatedProgress = userProgressService.updateProgress(questionId, currentUser.getId(), solved);
+            UserProgressDTO updatedProgress = userProgressService.updateProgress(questionId, currentUser.getId(),
+                    solved);
             return ResponseEntity.ok(updatedProgress);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -286,8 +286,7 @@ public class UserProgressController {
     @GetMapping("/categories/{categoryId}/progress")
     public ResponseEntity<Map<String, Object>> getCategoryProgress(
             @PathVariable String categoryId,
-            Authentication authentication
-    ) {
+            Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
         Map<String, Object> progress = userProgressService.getUserCategoryProgress(currentUser.getId(), categoryId);
         return ResponseEntity.ok(progress);
@@ -326,5 +325,30 @@ public class UserProgressController {
     public ResponseEntity<Map<String, Object>> getGlobalProgressStats() {
         Map<String, Object> globalStats = userProgressService.getGlobalStats();
         return ResponseEntity.ok(globalStats);
+    }
+
+    /**
+     * BULK: Get progress status for multiple questions (no 404s)
+     * POST /api/users/progress/bulk
+     * Body: { "questionIds": ["id1", "id2", "id3"] }
+     * Response: { "id1": true, "id2": false, "id3": true }
+     */
+    @PostMapping("/users/progress/bulk")
+    public ResponseEntity<Map<String, Boolean>> getBulkQuestionProgress(
+            @RequestBody Map<String, List<String>> request,
+            Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+        List<String> questionIds = request.get("questionIds");
+
+        if (questionIds == null || questionIds.isEmpty()) {
+            return ResponseEntity.ok(new HashMap<>());
+        }
+
+        // Get all progress records for these questions and current user
+        Map<String, Boolean> progressMap = userProgressService.getBulkProgressStatus(
+                currentUser.getId(),
+                questionIds);
+
+        return ResponseEntity.ok(progressMap);
     }
 }

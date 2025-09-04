@@ -52,7 +52,7 @@
 
 //         // Get all progress for user
 //         List<UserProgress> progressList = userProgressRepository.findByUser_Id(userId);
-        
+
 //         // Build progress map
 //         Map<String, UserProgressBulkDTO.QuestionProgressSummary> progressMap = new HashMap<>();
 //         for (UserProgress progress : progressList) {
@@ -126,7 +126,7 @@
 //         // Find question and user
 //         Question question = questionRepository.findById(questionId)
 //                 .orElseThrow(() -> new RuntimeException("Question not found"));
-        
+
 //         User user = userRepository.findById(userId)
 //                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -138,7 +138,7 @@
 //         progress.setQuestion(question);
 //         progress.setLevel(question.getLevel());
 //         progress.setSolved(solved);
-        
+
 //         if (solved && progress.getSolvedAt() == null) {
 //             progress.setSolvedAt(LocalDateTime.now());
 //         } else if (!solved) {
@@ -209,15 +209,15 @@
 //      */
 //     public Map<String, Object> getGlobalStats() {
 //         Map<String, Object> stats = new HashMap<>();
-        
+
 //         // Total solved questions across all users
 //         long totalSolvedGlobally = userProgressRepository.countTotalSolvedQuestions();
 //         stats.put("totalSolvedGlobally", totalSolvedGlobally);
-        
+
 //         // Count distinct users who solved at least one question
 //         long activeUsers = getDistinctActiveUsersCount();
 //         stats.put("activeUsers", activeUsers);
-        
+
 //         // Average questions solved per active user
 //         if (activeUsers > 0) {
 //             double avgQuestionsPerUser = (double) totalSolvedGlobally / activeUsers;
@@ -225,7 +225,7 @@
 //         } else {
 //             stats.put("averageQuestionsPerUser", 0.0);
 //         }
-        
+
 //         return stats;
 //     }
 
@@ -234,11 +234,11 @@
 //      */
 //     public Map<String, Object> getUserRank(String userId) {
 //         Map<String, Object> rankInfo = new HashMap<>();
-        
+
 //         long userSolvedCount = userProgressRepository.countByUser_IdAndSolvedTrue(userId);
 //         rankInfo.put("userSolvedCount", userSolvedCount);
 //         rankInfo.put("rank", "Calculation needed"); // Placeholder
-        
+
 //         return rankInfo;
 //     }
 
@@ -256,26 +256,26 @@
 //      */
 //     private UserProgressBulkDTO.UserProgressStatsSummary calculateProgressStats(String userId) {
 //         UserProgressBulkDTO.UserProgressStatsSummary stats = new UserProgressBulkDTO.UserProgressStatsSummary();
-        
+
 //         // Count solved questions
 //         int totalSolved = (int) userProgressRepository.countByUser_IdAndSolvedTrue(userId);
 //         stats.setTotalSolved(totalSolved);
-        
+
 //         // Total questions available
 //         int totalQuestions = (int) questionRepository.count();
 //         stats.setTotalQuestions(totalQuestions);
-        
+
 //         // Progress percentage
 //         double progressPercentage = totalQuestions > 0 ? (totalSolved * 100.0) / totalQuestions : 0.0;
 //         stats.setProgressPercentage(Math.round(progressPercentage * 100.0) / 100.0);
-        
+
 //         // Solved by level
 //         Map<String, Integer> solvedByLevel = new HashMap<>();
 //         solvedByLevel.put("easy", (int) userProgressRepository.countByUser_IdAndSolvedTrueAndLevel(userId, QuestionLevel.EASY));
 //         solvedByLevel.put("medium", (int) userProgressRepository.countByUser_IdAndSolvedTrueAndLevel(userId, QuestionLevel.MEDIUM));
 //         solvedByLevel.put("hard", (int) userProgressRepository.countByUser_IdAndSolvedTrueAndLevel(userId, QuestionLevel.HARD));
 //         stats.setSolvedByLevel(solvedByLevel);
-        
+
 //         return stats;
 //     }
 
@@ -284,33 +284,33 @@
 //      */
 //     private Map<String, Object> calculateUserStats(String userId) {
 //         Map<String, Object> stats = new HashMap<>();
-        
+
 //         // Total solved questions
 //         long totalSolved = userProgressRepository.countByUser_IdAndSolvedTrue(userId);
 //         stats.put("totalSolved", totalSolved);
-        
+
 //         // Solved questions by level
 //         Map<String, Long> solvedByLevel = new HashMap<>();
 //         solvedByLevel.put("easy", userProgressRepository.countByUser_IdAndSolvedTrueAndLevel(userId, QuestionLevel.EASY));
 //         solvedByLevel.put("medium", userProgressRepository.countByUser_IdAndSolvedTrueAndLevel(userId, QuestionLevel.MEDIUM));
 //         solvedByLevel.put("hard", userProgressRepository.countByUser_IdAndSolvedTrueAndLevel(userId, QuestionLevel.HARD));
 //         stats.put("solvedByLevel", solvedByLevel);
-        
+
 //         // Total questions available
 //         long totalQuestions = questionRepository.count();
 //         stats.put("totalQuestions", totalQuestions);
-        
+
 //         // Questions by level
 //         Map<String, Long> totalByLevel = new HashMap<>();
 //         totalByLevel.put("easy", questionRepository.countByLevel(QuestionLevel.EASY));
 //         totalByLevel.put("medium", questionRepository.countByLevel(QuestionLevel.MEDIUM));
 //         totalByLevel.put("hard", questionRepository.countByLevel(QuestionLevel.HARD));
 //         stats.put("totalByLevel", totalByLevel);
-        
+
 //         // Progress percentage
 //         double progressPercentage = totalQuestions > 0 ? (totalSolved * 100.0) / totalQuestions : 0.0;
 //         stats.put("progressPercentage", Math.round(progressPercentage * 100.0) / 100.0);
-        
+
 //         // Level-wise progress percentages
 //         Map<String, Double> progressByLevel = new HashMap<>();
 //         for (String level : List.of("easy", "medium", "hard")) {
@@ -320,14 +320,14 @@
 //             progressByLevel.put(level, Math.round(percentage * 100.0) / 100.0);
 //         }
 //         stats.put("progressByLevel", progressByLevel);
-        
+
 //         // Calculate streak and recent solved
 //         int streak = calculateUserStreak(userId);
 //         stats.put("streak", streak);
-        
+
 //         int recentSolved = getRecentSolvedCount(userId, 7);
 //         stats.put("recentSolved", recentSolved);
-        
+
 //         return stats;
 //     }
 
@@ -336,18 +336,18 @@
 //      */
 //     private Map<String, Object> calculateCategoryProgress(String userId, String categoryId) {
 //         Map<String, Object> progress = new HashMap<>();
-        
+
 //         // Get all questions in this category
 //         var questionsInCategory = questionRepository.findByCategory_Id(categoryId);
 //         long totalQuestionsInCategory = questionsInCategory.size();
-        
+
 //         // Count solved questions in this category
 //         long solvedInCategory = 0;
 //         Map<String, Long> solvedByLevel = new HashMap<>();
 //         solvedByLevel.put("easy", 0L);
 //         solvedByLevel.put("medium", 0L);
 //         solvedByLevel.put("hard", 0L);
-        
+
 //         for (var question : questionsInCategory) {
 //             if (hasUserSolvedQuestion(userId, question.getId())) {
 //                 solvedInCategory++;
@@ -355,15 +355,15 @@
 //                 solvedByLevel.put(level, solvedByLevel.get(level) + 1);
 //             }
 //         }
-        
+
 //         progress.put("totalInCategory", totalQuestionsInCategory);
 //         progress.put("solvedInCategory", solvedInCategory);
 //         progress.put("solvedByLevel", solvedByLevel);
-        
+
 //         double categoryProgress = totalQuestionsInCategory > 0 ? 
 //             (solvedInCategory * 100.0) / totalQuestionsInCategory : 0.0;
 //         progress.put("categoryProgressPercentage", Math.round(categoryProgress * 100.0) / 100.0);
-        
+
 //         return progress;
 //     }
 
@@ -373,15 +373,15 @@
 //     private int calculateUserStreak(String userId) {
 //         try {
 //             List<UserProgress> recentProgress = userProgressRepository.findTop30ByUser_IdAndSolvedTrueOrderBySolvedAtDesc(userId);
-            
+
 //             if (recentProgress.isEmpty()) {
 //                 return 0;
 //             }
-            
+
 //             LocalDate today = LocalDate.now();
 //             LocalDate currentDate = today;
 //             int streak = 0;
-            
+
 //             Set<LocalDate> solvedDates = new HashSet<>();
 //             for (UserProgress progress : recentProgress) {
 //                 if (progress.getSolvedAt() != null) {
@@ -389,13 +389,13 @@
 //                     solvedDates.add(solveDate);
 //                 }
 //             }
-            
+
 //             // Count consecutive days from today backwards
 //             while (solvedDates.contains(currentDate)) {
 //                 streak++;
 //                 currentDate = currentDate.minusDays(1);
 //             }
-            
+
 //             return streak;
 //         } catch (Exception e) {
 //             return 0;
@@ -408,9 +408,9 @@
 //     private int getRecentSolvedCount(String userId, int days) {
 //         try {
 //             LocalDateTime cutoffDate = LocalDateTime.now().minusDays(days);
-            
+
 //             List<UserProgress> allSolved = userProgressRepository.findByUser_IdAndSolvedTrue(userId);
-            
+
 //             return (int) allSolved.stream()
 //                     .filter(progress -> progress.getSolvedAt() != null && progress.getSolvedAt().isAfter(cutoffDate))
 //                     .count();
@@ -425,14 +425,14 @@
 //     private long getDistinctActiveUsersCount() {
 //         try {
 //             List<UserProgress> allSolvedProgress = userProgressRepository.findAllSolvedProgress();
-            
+
 //             Set<String> distinctUserIds = new HashSet<>();
 //             for (UserProgress progress : allSolvedProgress) {
 //                 if (progress.getUser() != null) {
 //                     distinctUserIds.add(progress.getUser().getId());
 //                 }
 //             }
-            
+
 //             return distinctUserIds.size();
 //         } catch (Exception e) {
 //             return 0;
@@ -488,7 +488,7 @@ public class UserProgressService {
         // Find question and user
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new RuntimeException("Question not found"));
-        
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -500,7 +500,7 @@ public class UserProgressService {
         progress.setQuestion(question);
         progress.setLevel(question.getLevel());
         progress.setSolved(solved);
-        
+
         if (solved && progress.getSolvedAt() == null) {
             progress.setSolvedAt(LocalDateTime.now());
         } else if (!solved) {
@@ -530,33 +530,36 @@ public class UserProgressService {
     // UPDATED: Get user progress statistics with streak and recentSolved
     public Map<String, Object> getUserProgressStats(String userId) {
         Map<String, Object> stats = new HashMap<>();
-        
+
         // Total solved questions
         long totalSolved = userProgressRepository.countByUser_IdAndSolvedTrue(userId);
         stats.put("totalSolved", totalSolved);
-        
+
         // Solved questions by level
         Map<String, Long> solvedByLevel = new HashMap<>();
-        solvedByLevel.put("easy", userProgressRepository.countByUser_IdAndSolvedTrueAndLevel(userId, QuestionLevel.EASY));
-        solvedByLevel.put("medium", userProgressRepository.countByUser_IdAndSolvedTrueAndLevel(userId, QuestionLevel.MEDIUM));
-        solvedByLevel.put("hard", userProgressRepository.countByUser_IdAndSolvedTrueAndLevel(userId, QuestionLevel.HARD));
+        solvedByLevel.put("easy",
+                userProgressRepository.countByUser_IdAndSolvedTrueAndLevel(userId, QuestionLevel.EASY));
+        solvedByLevel.put("medium",
+                userProgressRepository.countByUser_IdAndSolvedTrueAndLevel(userId, QuestionLevel.MEDIUM));
+        solvedByLevel.put("hard",
+                userProgressRepository.countByUser_IdAndSolvedTrueAndLevel(userId, QuestionLevel.HARD));
         stats.put("solvedByLevel", solvedByLevel);
-        
+
         // Total questions available
         long totalQuestions = questionRepository.count();
         stats.put("totalQuestions", totalQuestions);
-        
+
         // Questions by level
         Map<String, Long> totalByLevel = new HashMap<>();
         totalByLevel.put("easy", questionRepository.countByLevel(QuestionLevel.EASY));
         totalByLevel.put("medium", questionRepository.countByLevel(QuestionLevel.MEDIUM));
         totalByLevel.put("hard", questionRepository.countByLevel(QuestionLevel.HARD));
         stats.put("totalByLevel", totalByLevel);
-        
+
         // Progress percentage
         double progressPercentage = totalQuestions > 0 ? (totalSolved * 100.0) / totalQuestions : 0.0;
         stats.put("progressPercentage", Math.round(progressPercentage * 100.0) / 100.0);
-        
+
         // Level-wise progress percentages
         Map<String, Double> progressByLevel = new HashMap<>();
         for (String level : List.of("easy", "medium", "hard")) {
@@ -566,21 +569,22 @@ public class UserProgressService {
             progressByLevel.put(level, Math.round(percentage * 100.0) / 100.0);
         }
         stats.put("progressByLevel", progressByLevel);
-        
+
         // NEW: Calculate streak (simplified version)
         int streak = calculateUserStreak(userId);
         stats.put("streak", streak);
-        
+
         // NEW: Recent solved count (last 7 days)
         int recentSolved = getRecentSolvedCount(userId, 7);
         stats.put("recentSolved", recentSolved);
-        
+
         return stats;
     }
 
     // Get recent progress (last 10 solved questions)
     public List<UserProgressDTO> getRecentProgress(String userId) {
-        List<UserProgress> recentProgress = userProgressRepository.findTop10ByUser_IdAndSolvedTrueOrderBySolvedAtDesc(userId);
+        List<UserProgress> recentProgress = userProgressRepository
+                .findTop10ByUser_IdAndSolvedTrueOrderBySolvedAtDesc(userId);
         return recentProgress.stream()
                 .map(UserProgressDTO::fromEntity)
                 .toList();
@@ -607,15 +611,15 @@ public class UserProgressService {
     // Get global statistics
     public Map<String, Object> getGlobalStats() {
         Map<String, Object> stats = new HashMap<>();
-        
+
         // Total solved questions across all users
         long totalSolvedGlobally = userProgressRepository.countTotalSolvedQuestions();
         stats.put("totalSolvedGlobally", totalSolvedGlobally);
-        
+
         // Count distinct users who solved at least one question
         long activeUsers = getDistinctActiveUsersCount();
         stats.put("activeUsers", activeUsers);
-        
+
         // Average questions solved per active user
         if (activeUsers > 0) {
             double avgQuestionsPerUser = (double) totalSolvedGlobally / activeUsers;
@@ -623,25 +627,25 @@ public class UserProgressService {
         } else {
             stats.put("averageQuestionsPerUser", 0.0);
         }
-        
+
         return stats;
     }
 
     // Get user's progress on a specific category
     public Map<String, Object> getUserCategoryProgress(String userId, String categoryId) {
         Map<String, Object> progress = new HashMap<>();
-        
+
         // Get all questions in this category
         var questionsInCategory = questionRepository.findByCategory_Id(categoryId);
         long totalQuestionsInCategory = questionsInCategory.size();
-        
+
         // Count solved questions in this category
         long solvedInCategory = 0;
         Map<String, Long> solvedByLevel = new HashMap<>();
         solvedByLevel.put("easy", 0L);
         solvedByLevel.put("medium", 0L);
         solvedByLevel.put("hard", 0L);
-        
+
         for (var question : questionsInCategory) {
             if (hasUserSolvedQuestion(userId, question.getId())) {
                 solvedInCategory++;
@@ -649,15 +653,15 @@ public class UserProgressService {
                 solvedByLevel.put(level, solvedByLevel.get(level) + 1);
             }
         }
-        
+
         progress.put("totalInCategory", totalQuestionsInCategory);
         progress.put("solvedInCategory", solvedInCategory);
         progress.put("solvedByLevel", solvedByLevel);
-        
-        double categoryProgress = totalQuestionsInCategory > 0 ? 
-            (solvedInCategory * 100.0) / totalQuestionsInCategory : 0.0;
+
+        double categoryProgress = totalQuestionsInCategory > 0 ? (solvedInCategory * 100.0) / totalQuestionsInCategory
+                : 0.0;
         progress.put("categoryProgressPercentage", Math.round(categoryProgress * 100.0) / 100.0);
-        
+
         return progress;
     }
 
@@ -669,15 +673,15 @@ public class UserProgressService {
     // Get user's rank/leaderboard position
     public Map<String, Object> getUserRank(String userId) {
         Map<String, Object> rankInfo = new HashMap<>();
-        
+
         long userSolvedCount = userProgressRepository.countByUser_IdAndSolvedTrue(userId);
-        
+
         // Count how many users have solved more questions (simplified ranking)
         // This would need a more sophisticated query in a real implementation
-        
+
         rankInfo.put("userSolvedCount", userSolvedCount);
         rankInfo.put("rank", "Calculation needed"); // Placeholder
-        
+
         return rankInfo;
     }
 
@@ -689,17 +693,18 @@ public class UserProgressService {
      */
     private int calculateUserStreak(String userId) {
         try {
-            List<UserProgress> recentProgress = userProgressRepository.findTop30ByUser_IdAndSolvedTrueOrderBySolvedAtDesc(userId);
-            
+            List<UserProgress> recentProgress = userProgressRepository
+                    .findTop30ByUser_IdAndSolvedTrueOrderBySolvedAtDesc(userId);
+
             if (recentProgress.isEmpty()) {
                 return 0;
             }
-            
+
             // Simple streak calculation - consecutive days with at least one solve
             LocalDate today = LocalDate.now();
             LocalDate currentDate = today;
             int streak = 0;
-            
+
             Set<LocalDate> solvedDates = new HashSet<>();
             for (UserProgress progress : recentProgress) {
                 if (progress.getSolvedAt() != null) {
@@ -707,13 +712,13 @@ public class UserProgressService {
                     solvedDates.add(solveDate);
                 }
             }
-            
+
             // Count consecutive days from today backwards
             while (solvedDates.contains(currentDate)) {
                 streak++;
                 currentDate = currentDate.minusDays(1);
             }
-            
+
             return streak;
         } catch (Exception e) {
             return 0; // Return 0 if calculation fails
@@ -726,9 +731,9 @@ public class UserProgressService {
     private int getRecentSolvedCount(String userId, int days) {
         try {
             LocalDateTime cutoffDate = LocalDateTime.now().minusDays(days);
-            
+
             List<UserProgress> allSolved = userProgressRepository.findByUser_IdAndSolvedTrue(userId);
-            
+
             return (int) allSolved.stream()
                     .filter(progress -> progress.getSolvedAt() != null && progress.getSolvedAt().isAfter(cutoffDate))
                     .count();
@@ -739,22 +744,51 @@ public class UserProgressService {
 
     /**
      * Count distinct users who have solved at least one question
-     * This method handles the distinct count logic since MongoDB aggregation can be complex
+     * This method handles the distinct count logic since MongoDB aggregation can be
+     * complex
      */
     private long getDistinctActiveUsersCount() {
         try {
             List<UserProgress> allSolvedProgress = userProgressRepository.findAllSolvedProgress();
-            
+
             Set<String> distinctUserIds = new HashSet<>();
             for (UserProgress progress : allSolvedProgress) {
                 if (progress.getUser() != null) {
                     distinctUserIds.add(progress.getUser().getId());
                 }
             }
-            
+
             return distinctUserIds.size();
         } catch (Exception e) {
             return 0; // Return 0 if calculation fails
         }
+    }
+
+    /**
+     * Get bulk progress status for multiple questions (efficient, no 404s)
+     * 
+     * @param userId      User ID
+     * @param questionIds List of question IDs to check
+     * @return Map of questionId -> solved status (false if no progress record
+     *         exists)
+     */
+    public Map<String, Boolean> getBulkProgressStatus(String userId, List<String> questionIds) {
+        Map<String, Boolean> result = new HashMap<>();
+
+        // Initialize all questions as not solved
+        for (String questionId : questionIds) {
+            result.put(questionId, false);
+        }
+
+        // Query for existing progress records
+        List<UserProgress> existingProgress = userProgressRepository
+                .findByUser_IdAndQuestion_IdIn(userId, questionIds);
+
+        // Update map with actual progress status
+        for (UserProgress progress : existingProgress) {
+            result.put(progress.getQuestion().getId(), progress.isSolved());
+        }
+
+        return result;
     }
 }

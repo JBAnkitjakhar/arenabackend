@@ -61,15 +61,24 @@ public interface UserProgressRepository extends MongoRepository<UserProgress, St
     long countTotalSolvedQuestions();
 
     // Get level-wise statistics for a user
-    @Query(value = "{ 'user': ?0, 'solved': true }", 
-           fields = "{ 'level': 1 }")
+    @Query(value = "{ 'user': ?0, 'solved': true }", fields = "{ 'level': 1 }")
     List<UserProgress> findSolvedQuestionLevelsByUser(String userId);
 
     // FIXED: Count distinct users who have solved at least one question
-    // Note: MongoDB aggregation for distinct count - this may need custom implementation
+    // Note: MongoDB aggregation for distinct count - this may need custom
+    // implementation
     @Query("{ 'solved': true }")
     List<UserProgress> findAllSolvedProgress();
-    
+
     // Alternative: Use this method in service layer to count distinct users
     // You can implement the distinct count logic in UserProgressService
+
+    /**
+     * Find progress records for specific user and multiple questions
+     * 
+     * @param userId      User ID
+     * @param questionIds List of question IDs
+     * @return List of UserProgress records that exist (no records = not solved)
+     */
+    List<UserProgress> findByUser_IdAndQuestion_IdIn(String userId, List<String> questionIds);
 }
