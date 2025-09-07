@@ -36,9 +36,9 @@ public class AdminService {
     private UserProgressRepository userProgressRepository;
 
     /**
-     * Get admin dashboard statistics
+     * Get admin Home statistics
      */
-    public Map<String, Object> getAdminDashboardStats() {
+    public Map<String, Object> getAdminHomeStats() {
         Map<String, Object> stats = new HashMap<>();
 
         // Basic counts

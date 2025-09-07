@@ -47,13 +47,13 @@ public class AdminController {
     }
 
     /**
-     * Get admin dashboard statistics (Enhanced with user stats)
+     * Get admin Home statistics (Enhanced with user stats)
      * GET /api/admin/stats
      */
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getAdminStats() {
         try {
-            Map<String, Object> stats = adminService.getAdminDashboardStats();
+            Map<String, Object> stats = adminService.getAdminHomeStats();
             
             // Add user role statistics
             UserService.UserStatsDTO userStats = userService.getUserStats();
