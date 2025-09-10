@@ -2,6 +2,7 @@
 package com.algoarena.controller.dsa;
 
 import com.algoarena.dto.dsa.CategoryDTO;
+import com.algoarena.dto.dsa.CategorySummaryDTO;
 import com.algoarena.model.User;
 import com.algoarena.service.dsa.CategoryService;
 import jakarta.validation.Valid;
@@ -40,8 +41,7 @@ public class CategoryController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<CategoryDTO> createCategory(
             @Valid @RequestBody CategoryDTO categoryDTO,
-            Authentication authentication
-    ) {
+            Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
         CategoryDTO createdCategory = categoryService.createCategory(categoryDTO, currentUser);
         return ResponseEntity.status(201).body(createdCategory);
@@ -51,8 +51,7 @@ public class CategoryController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<CategoryDTO> updateCategory(
             @PathVariable String id,
-            @Valid @RequestBody CategoryDTO categoryDTO
-    ) {
+            @Valid @RequestBody CategoryDTO categoryDTO) {
         try {
             CategoryDTO updatedCategory = categoryService.updateCategory(id, categoryDTO);
             return ResponseEntity.ok(updatedCategory);
@@ -67,9 +66,8 @@ public class CategoryController {
         try {
             int deletedQuestions = categoryService.deleteCategory(id);
             return ResponseEntity.ok(Map.of(
-                "success", true,
-                "deletedQuestions", deletedQuestions
-            ));
+                    "success", true,
+                    "deletedQuestions", deletedQuestions));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
@@ -79,5 +77,21 @@ public class CategoryController {
     public ResponseEntity<Map<String, Object>> getCategoryStats(@PathVariable String id) {
         Map<String, Object> stats = categoryService.getCategoryStats(id);
         return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * NEW OPTIMIZED ENDPOINT: Get all categories with user progress included
+     * This eliminates N+1 queries by including progress stats in single API call
+     * GET /api/categories/with-progress
+     */
+    @GetMapping("/with-progress")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<CategorySummaryDTO>> getCategoriesWithProgress(Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+
+        List<CategorySummaryDTO> categoriesWithProgress = categoryService
+                .getCategoriesWithProgress(currentUser.getId());
+
+        return ResponseEntity.ok(categoriesWithProgress);
     }
 }

@@ -3,6 +3,7 @@ package com.algoarena.controller.dsa;
 
 import com.algoarena.dto.dsa.QuestionDTO;
 import com.algoarena.dto.dsa.QuestionDetailDTO;
+import com.algoarena.dto.dsa.QuestionSummaryDTO;
 import com.algoarena.model.User;
 import com.algoarena.service.dsa.QuestionService;
 import jakarta.validation.Valid;
@@ -29,8 +30,7 @@ public class QuestionController {
             Pageable pageable,
             @RequestParam(required = false) String categoryId,
             @RequestParam(required = false) String level,
-            @RequestParam(required = false) String search
-    ) {
+            @RequestParam(required = false) String search) {
         Page<QuestionDTO> questions = questionService.getAllQuestions(pageable, categoryId, level, search);
         return ResponseEntity.ok(questions);
     }
@@ -39,8 +39,7 @@ public class QuestionController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<QuestionDetailDTO> getQuestionDetails(
             @PathVariable String id,
-            Authentication authentication
-    ) {
+            Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
         QuestionDetailDTO questionDetail = questionService.getQuestionDetails(id, currentUser.getId());
         if (questionDetail == null) {
@@ -53,8 +52,7 @@ public class QuestionController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<QuestionDTO> createQuestion(
             @Valid @RequestBody QuestionDTO questionDTO,
-            Authentication authentication
-    ) {
+            Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
         QuestionDTO createdQuestion = questionService.createQuestion(questionDTO, currentUser);
         return ResponseEntity.status(201).body(createdQuestion);
@@ -64,8 +62,7 @@ public class QuestionController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<QuestionDTO> updateQuestion(
             @PathVariable String id,
-            @Valid @RequestBody QuestionDTO questionDTO
-    ) {
+            @Valid @RequestBody QuestionDTO questionDTO) {
         try {
             QuestionDTO updatedQuestion = questionService.updateQuestion(id, questionDTO);
             return ResponseEntity.ok(updatedQuestion);
@@ -95,5 +92,26 @@ public class QuestionController {
     public ResponseEntity<Map<String, Object>> getQuestionStats() {
         Map<String, Object> stats = questionService.getQuestionCounts();
         return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * NEW OPTIMIZED ENDPOINT: Get questions summary with user progress
+     * This endpoint eliminates N+1 queries by fetching user progress in bulk
+     * GET /api/questions/summary
+     */
+    @GetMapping("/summary")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Page<QuestionSummaryDTO>> getQuestionsSummaryWithProgress(
+            Pageable pageable,
+            @RequestParam(required = false) String categoryId,
+            @RequestParam(required = false) String level,
+            @RequestParam(required = false) String search,
+            Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+
+        Page<QuestionSummaryDTO> questionsSummary = questionService.getQuestionsWithProgress(
+                pageable, categoryId, level, search, currentUser.getId());
+
+        return ResponseEntity.ok(questionsSummary);
     }
 }

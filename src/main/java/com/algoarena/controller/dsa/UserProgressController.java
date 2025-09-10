@@ -37,6 +37,17 @@ public class UserProgressController {
     }
 
     /**
+     * TEMPORARY DEBUG ENDPOINT - Remove after debugging
+     * GET /api/debug/user-progress
+     */
+    @GetMapping("/debug/user-progress")
+    public ResponseEntity<String> debugUserProgress(Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+        userProgressService.debugUserProgress(currentUser.getId());
+        return ResponseEntity.ok("Debug output printed to console - check server logs");
+    }
+
+    /**
      * Get current user's recent progress (last 10 solved questions)
      * GET /api/users/progress/recent
      */
