@@ -26,6 +26,7 @@ public class QuestionController {
     private QuestionService questionService;
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Page<QuestionDTO>> getAllQuestions(
             Pageable pageable,
             @RequestParam(required = false) String categoryId,
@@ -83,12 +84,14 @@ public class QuestionController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<QuestionDTO>> searchQuestions(@RequestParam String q) {
         List<QuestionDTO> questions = questionService.searchQuestions(q);
         return ResponseEntity.ok(questions);
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, Object>> getQuestionStats() {
         Map<String, Object> stats = questionService.getQuestionCounts();
         return ResponseEntity.ok(stats);

@@ -23,12 +23,14 @@ public class CategoryController {
     private CategoryService categoryService;
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<CategoryDTO>> getAllCategories() {
         List<CategoryDTO> categories = categoryService.getAllCategories();
         return ResponseEntity.ok(categories);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CategoryDTO> getCategoryById(@PathVariable String id) {
         CategoryDTO category = categoryService.getCategoryById(id);
         if (category == null) {
@@ -74,6 +76,7 @@ public class CategoryController {
     }
 
     @GetMapping("/{id}/stats")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, Object>> getCategoryStats(@PathVariable String id) {
         Map<String, Object> stats = categoryService.getCategoryStats(id);
         return ResponseEntity.ok(stats);
