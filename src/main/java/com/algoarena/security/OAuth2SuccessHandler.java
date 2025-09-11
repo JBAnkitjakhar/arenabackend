@@ -1,5 +1,4 @@
 // src/main/java/com/algoarena/security/OAuth2SuccessHandler.java
-// update in prod at line 55, 67
 package com.algoarena.security;
 
 import com.algoarena.model.User;
@@ -11,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -29,6 +29,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     @Autowired
     private JwtService jwtService;
+
+    @Value("${app.cors.allowed-origins:https://24-algofront.vercel.app}")
+    private String allowedOrigins;
 
     @Override
     public void onAuthenticationSuccess(
@@ -52,8 +55,11 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             String token = jwtService.generateToken(user);
             logger.debug("JWT token generated for user: {}", user.getEmail());
             
+            // Get frontend URL (use first allowed origin)
+            String frontendUrl = allowedOrigins.split(",")[0];
+            
             // Redirect to frontend with token
-            String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/auth/callback")
+            String targetUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/auth/callback")
                     .queryParam("token", token)
                     .queryParam("user", user.getId())
                     .build().toUriString();
@@ -64,7 +70,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         } catch (Exception e) {
             logger.error("Error processing OAuth2 authentication for provider: " + registrationId, e);
             
-            String errorUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/auth/login")
+            String frontendUrl = allowedOrigins.split(",")[0];
+            String errorUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/auth/login")
                     .queryParam("error", "authentication_failed")
                     .queryParam("message", e.getMessage())
                     .build().toUriString();

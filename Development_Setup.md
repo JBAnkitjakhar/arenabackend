@@ -1,83 +1,3 @@
-# 🚀 AlgoArena Backend - Development Setup
-
-## 📋 Prerequisites
-- Java 21+
-- Maven 3.6+
-- MongoDB Atlas account
-- Upstash Redis account (optional for caching)
-
-## 🔧 Local Development Setup
-
-### 1. Clone the Repository
-```bash
-git clone <your-repo-url>
-cd algoarena-backend
-```
-
-### 2. Create Local Configuration File
-```bash
-# Copy the template file
-cp src/main/resources/application-local.properties.template src/main/resources/application-local.properties
-```
-
-### 3. Fill in Your Configuration
-Edit `src/main/resources/application-local.properties` with your actual values:
-
-**Required:**
-- `MONGODB_URI` - Your MongoDB Atlas connection string
-- `JWT_SECRET` - Generate with: `openssl rand -base64 32`
-
-**Optional (for full functionality):**
-- `REDIS_URL` - Your Upstash Redis URL
-- `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET` - For Google OAuth
-- `GITHUB_CLIENT_ID` & `GITHUB_CLIENT_SECRET` - For GitHub OAuth  
-- `CLOUDINARY_*` - For image uploads
-
-### 4. Run the Application
-```bash
-mvn spring-boot:run
-```
-
-The application will start on `http://localhost:8080/api`
-
-### 5. Verify Setup
-```bash
-# Health check
-curl http://localhost:8080/api/actuator/health
-
-# Should return: {"status":"UP"}
-```
-
-## 🔐 Security Notes
-
-- ⚠️ **NEVER commit** `application-local.properties` - it contains secrets
-- ✅ **Always use** the template file for sharing configuration structure
-- 🔒 **Keep your secrets safe** - they're in `.gitignore`
-
-## 🌐 Environment Profiles
-
-- **Local Development:** `spring.profiles.active=local`
-- **Production:** `spring.profiles.active=prod`
-
-## 📚 API Documentation
-
-Once running, visit:
-- Health: `http://localhost:8080/api/actuator/health`
-- Info: `http://localhost:8080/api/actuator/info`
-
-## 🆘 Need Help?
-
-1. Make sure all required environment variables are set
-2. Check MongoDB Atlas network access (allow your IP)
-3. Verify Java 21+ is installed: `java --version`
-4. Check Maven version: `mvn --version`
-
-
-
-
-
-
-
 
 # application-local.properties
 // and i already add real secrets so dont worry
@@ -111,3 +31,36 @@ app.cors.allowed-origins=http://localhost:3000
 
 # Redis timeout
 spring.data.redis.timeout=2000ms
+
+
+
+
+
+
+
+.env file 
+# MongoDB Atlas Configuration
+MONGODB_URI= 
+
+# Piston API (default is fine) i dont it , i hardcoded that 
+# PISTON_API_URL=https://emkc.org/api/v2/piston
+
+# OAuth2 - Google
+GOOGLE_CLIENT_ID= 
+GOOGLE_CLIENT_SECRET= 
+
+# OAuth2 - GitHub
+GITHUB_CLIENT_ID= 
+GITHUB_CLIENT_SECRET= 
+
+# JWT Configuration
+JWT_SECRET= 
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME= 
+CLOUDINARY_API_KEY= 
+CLOUDINARY_API_SECRET= 
+
+# CORS (for development)
+ALLOWED_ORIGINS=http://localhost:3000
+ 

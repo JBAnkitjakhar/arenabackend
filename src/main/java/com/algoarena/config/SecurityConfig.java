@@ -3,6 +3,7 @@ package com.algoarena.config;
 
 import com.algoarena.security.JwtAuthenticationFilter;
 import com.algoarena.security.OAuth2SuccessHandler;
+import com.algoarena.security.OAuth2FailureHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,6 +44,9 @@ public class SecurityConfig {
     private OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Autowired
+    private OAuth2FailureHandler oAuth2FailureHandler;
+
+    @Autowired
     private AppConfig appConfig;
 
     @Bean
@@ -52,7 +56,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ PUBLIC ENDPOINTS (No authentication required)
+                        // PUBLIC ENDPOINTS (No authentication required)
                         .requestMatchers(
                                 "/auth/**",
                                 "/oauth2/**",
@@ -62,16 +66,16 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
                         
-                        // ✅ AUTHENTICATED USER ENDPOINTS - READ ACCESS
+                        // AUTHENTICATED USER ENDPOINTS - READ ACCESS
                         .requestMatchers(HttpMethod.GET,
-                                "/questions/summary",              // NEW: Questions with user progress
-                                "/questions",                      // FIXED: Questions list (with filters)
+                                "/questions/summary",              // Questions with user progress
+                                "/questions",                      // Questions list (with filters)
                                 "/questions/{id}",                 // Question details
-                                "/categories/with-progress",       // NEW: Categories with user progress
+                                "/categories/with-progress",       // Categories with user progress
                                 "/categories",                     // Basic categories list
                                 "/categories/{id}",                // Category details
-                                "/categories/{id}/stats",          // FIXED: Category statistics
-                                "/categories/{id}/progress",       // FIXED: User progress for category
+                                "/categories/{id}/stats",          // Category statistics
+                                "/categories/{id}/progress",       // User progress for category
                                 "/solutions/question/*",           // View solutions by question
                                 "/solutions/{id}",                 // View individual solutions
                                 "/approaches/**",                  // User approaches (all operations)
@@ -82,7 +86,7 @@ public class SecurityConfig {
                                 "/files/visualizers/**"           // Access visualizer files
                         ).authenticated()
                         
-                        // ✅ USER PROGRESS UPDATE ENDPOINTS
+                        // USER PROGRESS UPDATE ENDPOINTS
                         .requestMatchers(HttpMethod.PUT,
                                 "/questions/*/progress"            // Update question progress (mark solved/unsolved)
                         ).authenticated()
@@ -91,12 +95,12 @@ public class SecurityConfig {
                                 "/questions/*/progress"            // Create/update question progress
                         ).authenticated()
                         
-                        // ✅ USER APPROACH MANAGEMENT ENDPOINTS
+                        // USER APPROACH MANAGEMENT ENDPOINTS
                         .requestMatchers(HttpMethod.POST, "/approaches/question/*").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/approaches/*").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/approaches/*").authenticated()
                         
-                        // ✅ ADMIN-ONLY ENDPOINTS - CREATE/UPDATE/DELETE OPERATIONS
+                        // ADMIN-ONLY ENDPOINTS - CREATE/UPDATE/DELETE OPERATIONS
                         .requestMatchers(
                                 "/admin/**",                       // All admin endpoints
                                 "/questions/stats",                // Question statistics
@@ -111,7 +115,7 @@ public class SecurityConfig {
                                 "/files/visualizers/*/download"   // Visualizer downloads (admin only)
                         ).hasAnyRole("ADMIN", "SUPERADMIN")
                         
-                        // ✅ ADMIN CREATE/UPDATE/DELETE OPERATIONS
+                        // ADMIN CREATE/UPDATE/DELETE OPERATIONS
                         .requestMatchers(HttpMethod.POST, "/questions", "/categories", "/solutions").hasAnyRole("ADMIN", "SUPERADMIN")
                         .requestMatchers(HttpMethod.PUT, "/questions/*", "/categories/*", "/solutions/*").hasAnyRole("ADMIN", "SUPERADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/questions/*", "/categories/*", "/solutions/*").hasAnyRole("ADMIN", "SUPERADMIN")
@@ -140,7 +144,7 @@ public class SecurityConfig {
                                 .baseUri("/oauth2/callback/*")
                         )
                         .successHandler(oAuth2SuccessHandler)
-                        .failureUrl("http://localhost:3000/auth/login?error=oauth_failed")
+                        .failureHandler(oAuth2FailureHandler)
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -181,7 +185,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // Keep this for security framework compatibility
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
