@@ -10,6 +10,7 @@ import com.algoarena.repository.UserProgressRepository;
 import com.algoarena.repository.QuestionRepository;
 import com.algoarena.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +43,13 @@ public class UserProgressService {
         return progress != null ? UserProgressDTO.fromEntity(progress) : null;
     }
 
-    // Update user progress for a question
+    /**
+     * CRITICAL: Update user progress with PROPER cache eviction for
+     * questions/categories
+     * This method triggers cache eviction to ensure real-time updates in questions
+     * and categories pages
+     */
+    @CacheEvict(value = { "questionsSummary", "categoriesProgress", "userProgressStats" }, allEntries = true)
     public UserProgressDTO updateProgress(String questionId, String userId, boolean solved) {
         // Find question and user
         Question question = questionRepository.findById(questionId)
@@ -67,6 +74,12 @@ public class UserProgressService {
         }
 
         UserProgress savedProgress = userProgressRepository.save(progress);
+
+        // CRITICAL: @CacheEvict annotation above ensures all relevant caches are
+        // cleared
+        System.out.println("User progress updated and ALL CACHES EVICTED for user: " + userId +
+                " - question: " + questionId + " - solved: " + solved);
+
         return UserProgressDTO.fromEntity(savedProgress);
     }
 
