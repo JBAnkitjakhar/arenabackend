@@ -58,3 +58,67 @@ CLOUDINARY_API_SECRET=
 # CORS (for development)
 ALLOWED_ORIGINS=http://localhost:3000
  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ # src/main/resources/application-local.properties
+# Local Development Configuration
+
+# MongoDB Atlas Configuration
+spring.data.mongodb.uri=
+
+# OAuth2 Configuration - Replace with your actual values
+spring.security.oauth2.client.registration.google.client-id= 
+spring.security.oauth2.client.registration.google.client-secret= 
+
+spring.security.oauth2.client.registration.github.client-id= 
+spring.security.oauth2.client.registration.github.client-secret= 
+
+# JWT Configuration
+app.jwt.secret=
+
+# Cloudinary Configuration - Replace with your actual values
+app.cloudinary.cloud-name= 
+app.cloudinary.api-key= 
+app.cloudinary.api-secret=
+
+# CORS for local development
+app.cors.allowed-origins=http://localhost:3000
+
+# Piston API
+app.piston.api-url=https://emkc.org/api/v2/piston
