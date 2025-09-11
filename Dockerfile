@@ -1,4 +1,4 @@
-# Dockerfile - Place this in your backend root directory
+# Dockerfile - Fixed for Render PORT environment variable issue
 
 # Use official OpenJDK 21 image
 FROM openjdk:21-jdk-slim
@@ -30,12 +30,13 @@ RUN addgroup --system spring && adduser --system spring --ingroup spring
 RUN chown -R spring:spring /app
 USER spring
 
-# Expose port (Render will set the PORT environment variable)
-EXPOSE $PORT
+# Expose port 8080 (Render will map this to external port)
+EXPOSE 8080
 
 # Health check (optional but recommended for Render)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:$PORT/api/actuator/health || exit 1
+    CMD curl -f http://localhost:8080/api/actuator/health || exit 1
 
 # Run the application with production profile
-CMD ["java", "-Dspring.profiles.active=prod", "-Dserver.port=$PORT", "-jar", "target/algoarena-backend-0.0.1-SNAPSHOT.jar"]
+# Use shell form to properly handle environment variables
+CMD java -Dspring.profiles.active=prod -jar target/algoarena-backend-0.0.1-SNAPSHOT.jar
