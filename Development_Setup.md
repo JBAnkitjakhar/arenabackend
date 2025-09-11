@@ -5,9 +5,6 @@
 # MongoDB Atlas Configuration - Replace with your actual connection string
 spring.data.mongodb.uri=mongodb+srv://USERNAME:PASSWORD@CLUSTER.mongodb.net/DATABASE_NAME?retryWrites=true&w=majority&appName=CLUSTER_NAME
 
-# Upstash Redis Configuration - Replace with your actual Redis URL  
-spring.data.redis.url=rediss://default:YOUR_PASSWORD@YOUR_REDIS_HOST.upstash.io:6380
-
 # OAuth2 Configuration - Replace with your actual OAuth credentials
 spring.security.oauth2.client.registration.google.client-id=YOUR_GOOGLE_CLIENT_ID
 spring.security.oauth2.client.registration.google.client-secret=YOUR_GOOGLE_CLIENT_SECRET
@@ -28,9 +25,6 @@ app.piston.api-url=https://emkc.org/api/v2/piston
 
 # CORS for local development
 app.cors.allowed-origins=http://localhost:3000
-
-# Redis timeout
-spring.data.redis.timeout=2000ms
 
 
 
