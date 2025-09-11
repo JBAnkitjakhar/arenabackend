@@ -1,5 +1,4 @@
 // src/main/java/com/algoarena/config/SecurityConfig.java
-// need update in prod at line 101, 119, 142
 package com.algoarena.config;
 
 import com.algoarena.security.JwtAuthenticationFilter;
@@ -46,82 +45,107 @@ public class SecurityConfig {
     @Autowired
     private AppConfig appConfig;
 
-   @Bean
-public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                    // ✅ PUBLIC ENDPOINTS (No authentication required)
-                    .requestMatchers(
-                            "/auth/**",
-                            "/oauth2/**",
-                            "/login/**",
-                            "/health",
-                            "/actuator/**",
-                            "/error"
-                    ).permitAll()
-                    
-                    // ✅ VISUALIZER ACCESS (Authenticated users only) - FIXED PATH PATTERN
-                    .requestMatchers(
-                            HttpMethod.GET,
-                            "/files/visualizers/**"  // FIXED: Use /** for all sub-paths
-                    ).authenticated()
-                    
-                    // ✅ ADMIN-ONLY ENDPOINTS 
-                    .requestMatchers(
-                            "/admin/**",
-                            "/categories/**",
-                            "/questions/**",
-                            "/solutions/question/*/create",
-                            "/solutions/*/update",
-                            "/solutions/*/delete",
-                            "/files/images/**",                  // Image uploads (admin only)
-                            "/files/visualizers/*/upload",      // Visualizer uploads (admin only) 
-                            "/files/visualizers/*/delete",      // Visualizer deletes (admin only)
-                            "/files/visualizers/*/metadata",    // Visualizer metadata (admin only)
-                            "/files/visualizers/*/download"     // Visualizer downloads (admin only)
-                    ).hasAnyRole("ADMIN", "SUPERADMIN")
-                    
-                    // ✅ OTHER AUTHENTICATED ENDPOINTS
-                    .requestMatchers(
-                            "/questions/*/view",
-                            "/solutions/question/*",
-                            "/solutions/*",
-                            "/approaches/**",
-                            "/compiler/**",
-                            "/users/**",
-                            "/files/solutions/*/visualizers"    // List visualizers by solution
-                    ).authenticated()
-                    
-                    .requestMatchers("/questions").permitAll()
-                    
-                    // Everything else requires authentication
-                    .anyRequest().authenticated()
-            )
-            // Add exception handling to prevent redirects
-            .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint((request, response, authException) -> {
-                    response.setStatus(401);
-                    response.setContentType("application/json");
-                    response.getWriter().write("{\"error\":\"Authentication required\",\"message\":\"Please provide valid JWT token\"}");
-                })
-            )
-            .oauth2Login(oauth2 -> oauth2
-                    .authorizationEndpoint(authorization -> authorization
-                            .baseUri("/oauth2/authorization")
-                    )
-                    .redirectionEndpoint(redirection -> redirection
-                            .baseUri("/oauth2/callback/*")
-                    )
-                    .successHandler(oAuth2SuccessHandler)
-                    .failureUrl("http://localhost:3000/auth/login?error=oauth_failed")
-            )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // ✅ PUBLIC ENDPOINTS (No authentication required)
+                        .requestMatchers(
+                                "/auth/**",
+                                "/oauth2/**",
+                                "/login/**",
+                                "/health",
+                                "/actuator/**",
+                                "/error"
+                        ).permitAll()
+                        
+                        // ✅ AUTHENTICATED USER ENDPOINTS - READ ACCESS
+                        .requestMatchers(HttpMethod.GET,
+                                "/questions/summary",              // NEW: Questions with user progress
+                                "/questions",                      // FIXED: Questions list (with filters)
+                                "/questions/{id}",                 // Question details
+                                "/categories/with-progress",       // NEW: Categories with user progress
+                                "/categories",                     // Basic categories list
+                                "/categories/{id}",                // Category details
+                                "/categories/{id}/stats",          // FIXED: Category statistics
+                                "/categories/{id}/progress",       // FIXED: User progress for category
+                                "/solutions/question/*",           // View solutions by question
+                                "/solutions/{id}",                 // View individual solutions
+                                "/approaches/**",                  // User approaches (all operations)
+                                "/compiler/**",                    // Code execution
+                                "/users/progress",                 // User progress stats
+                                "/users/progress/recent",          // Recent user progress
+                                "/files/solutions/*/visualizers", // List visualizers by solution
+                                "/files/visualizers/**"           // Access visualizer files
+                        ).authenticated()
+                        
+                        // ✅ USER PROGRESS UPDATE ENDPOINTS
+                        .requestMatchers(HttpMethod.PUT,
+                                "/questions/*/progress"            // Update question progress (mark solved/unsolved)
+                        ).authenticated()
+                        
+                        .requestMatchers(HttpMethod.POST,
+                                "/questions/*/progress"            // Create/update question progress
+                        ).authenticated()
+                        
+                        // ✅ USER APPROACH MANAGEMENT ENDPOINTS
+                        .requestMatchers(HttpMethod.POST, "/approaches/question/*").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/approaches/*").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/approaches/*").authenticated()
+                        
+                        // ✅ ADMIN-ONLY ENDPOINTS - CREATE/UPDATE/DELETE OPERATIONS
+                        .requestMatchers(
+                                "/admin/**",                       // All admin endpoints
+                                "/questions/stats",                // Question statistics
+                                "/questions/search",               // Question search (admin)
+                                "/solutions/question/*/create",    // Create solutions
+                                "/solutions/*/update",             // Update solutions
+                                "/solutions/*/delete",             // Delete solutions
+                                "/files/images/**",                // Image uploads (admin only)
+                                "/files/visualizers/*/upload",    // Visualizer uploads (admin only)
+                                "/files/visualizers/*/delete",    // Visualizer deletes (admin only)
+                                "/files/visualizers/*/metadata",  // Visualizer metadata (admin only)
+                                "/files/visualizers/*/download"   // Visualizer downloads (admin only)
+                        ).hasAnyRole("ADMIN", "SUPERADMIN")
+                        
+                        // ✅ ADMIN CREATE/UPDATE/DELETE OPERATIONS
+                        .requestMatchers(HttpMethod.POST, "/questions", "/categories", "/solutions").hasAnyRole("ADMIN", "SUPERADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/questions/*", "/categories/*", "/solutions/*").hasAnyRole("ADMIN", "SUPERADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/questions/*", "/categories/*", "/solutions/*").hasAnyRole("ADMIN", "SUPERADMIN")
+                        
+                        // Everything else requires authentication
+                        .anyRequest().authenticated()
+                )
+                // Add exception handling
+                .exceptionHandling(exceptions -> exceptions
+                    .authenticationEntryPoint((request, response, authException) -> {
+                        response.setStatus(401);
+                        response.setContentType("application/json");
+                        response.getWriter().write("{\"error\":\"Authentication required\",\"message\":\"Please provide valid JWT token\"}");
+                    })
+                    .accessDeniedHandler((request, response, accessDeniedException) -> {
+                        response.setStatus(403);
+                        response.setContentType("application/json");
+                        response.getWriter().write("{\"error\":\"Access denied\",\"message\":\"You don't have permission to access this resource\"}");
+                    })
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .authorizationEndpoint(authorization -> authorization
+                                .baseUri("/oauth2/authorization")
+                        )
+                        .redirectionEndpoint(redirection -> redirection
+                                .baseUri("/oauth2/callback/*")
+                        )
+                        .successHandler(oAuth2SuccessHandler)
+                        .failureUrl("http://localhost:3000/auth/login?error=oauth_failed")
+                )
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-    return http.build();
-}
+        return http.build();
+    }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -157,7 +181,7 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // i think i dont need this , becuase we dont use email andpassword logins
+        return new BCryptPasswordEncoder(); // Keep this for security framework compatibility
     }
 
     @Bean
