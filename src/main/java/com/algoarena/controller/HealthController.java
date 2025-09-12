@@ -15,26 +15,26 @@ import java.util.Map;
 
 @RestController
 public class HealthController {
-    
+
     @Autowired
     private MongoTemplate mongoTemplate;
-    
+
     /**
      * Basic health check endpoint for keep-alive pings
-     * Accessible at: https://arenabackend-5bca.onrender.com/api/health
+     * Accessible at: https://arenabackend-5bca.onrender.com/api/status
      */
-    @GetMapping("/health")
-    public ResponseEntity<Map<String, Object>> health() {
-        Map<String, Object> health = new HashMap<>();
-        health.put("status", "UP");
-        health.put("timestamp", System.currentTimeMillis());
-        health.put("datetime", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-        health.put("message", "AlgoArena Backend is running!");
-        health.put("service", "keep-alive-ping");
-        
-        return ResponseEntity.ok(health);
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, Object>> status() {
+        Map<String, Object> status = new HashMap<>();
+        status.put("status", "UP");
+        status.put("timestamp", System.currentTimeMillis());
+        status.put("datetime", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        status.put("message", "AlgoArena Backend is running!");
+        status.put("service", "keep-alive-ping");
+
+        return ResponseEntity.ok(status);
     }
-    
+
     /**
      * Simple ping endpoint for testing
      * Accessible at: https://arenabackend-5bca.onrender.com/api/ping
@@ -46,7 +46,7 @@ public class HealthController {
         response.put("timestamp", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         return ResponseEntity.ok(response);
     }
-    
+
     /**
      * Detailed health check with MongoDB connectivity
      * Accessible at: https://arenabackend-5bca.onrender.com/api/healthz
@@ -59,7 +59,7 @@ public class HealthController {
         health.put("datetime", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         health.put("application", "AlgoArena Backend");
         health.put("version", "1.0.0");
-        
+
         // Check MongoDB connectivity
         try {
             // Simple ping to MongoDB
@@ -71,7 +71,7 @@ public class HealthController {
             health.put("database", "Connection failed: " + e.getMessage());
             // Still return 200 OK for keep-alive purposes
         }
-        
+
         // Add system info
         Runtime runtime = Runtime.getRuntime();
         Map<String, Object> systemInfo = new HashMap<>();
@@ -81,7 +81,7 @@ public class HealthController {
         systemInfo.put("maxMemory", runtime.maxMemory());
         systemInfo.put("processors", runtime.availableProcessors());
         health.put("system", systemInfo);
-        
+
         return ResponseEntity.ok(health);
     }
 }

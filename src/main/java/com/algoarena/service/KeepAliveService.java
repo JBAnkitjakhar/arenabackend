@@ -47,12 +47,12 @@ public class KeepAliveService {
         }
         
         try {
-            String healthUrl = renderUrl + "/api/health";
+            String statusUrl = renderUrl + "/api/status";  // CHANGED: /status instead of /health
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
             
-            logger.info("Sending keep-alive ping at {} to: {}", timestamp, healthUrl);
+            logger.info("Sending keep-alive ping at {} to: {}", timestamp, statusUrl);
             
-            String response = restTemplate.getForObject(healthUrl, String.class);
+            String response = restTemplate.getForObject(statusUrl, String.class);
             
             logger.info("Keep-alive ping successful! Response: {}", response);
             
@@ -69,7 +69,7 @@ public class KeepAliveService {
     public void logKeepAliveStatus() {
         if (keepAliveEnabled && renderUrl != null && !renderUrl.isEmpty()) {
             logger.info("Keep-Alive Service ACTIVE - App will stay awake on Render!");
-            logger.info("Target URL: {}/api/health", renderUrl);
+            logger.info("Target URL: {}/api/status", renderUrl);  // CHANGED: /status instead of /health
             logger.info("Ping interval: Every 14 minutes");
         } else {
             logger.info("Keep-Alive Service DISABLED or URL not configured");
