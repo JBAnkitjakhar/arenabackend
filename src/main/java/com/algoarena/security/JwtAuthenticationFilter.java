@@ -28,12 +28,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private UserDetailsService userDetailsService;
 
-    // ✅ FIXED: Define specific endpoints to skip JWT processing
+    // Define specific endpoints to skip JWT processing - ONLY ADDED HEALTH ENDPOINTS
     private static final List<String> SKIP_JWT_PATHS = List.of(
             "/oauth2/",
             "/login",
             "/error",
             "/actuator/",
+            
+            // KEEP-ALIVE HEALTH ENDPOINTS (CRITICAL FOR RENDER)
+            "/health",
+            "/ping",
+            "/healthz",
+            
             "/auth/google",
             "/auth/github",
             "/auth/health"
@@ -48,7 +54,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String path = request.getServletPath();
         
-        // ✅ FIXED: Only skip JWT for specific auth endpoints, NOT all /api/auth
+        // Only skip JWT for specific auth endpoints, NOT all /api/auth
         if (shouldSkipJwtProcessing(path)) {
             filterChain.doFilter(request, response);
             return;
@@ -96,7 +102,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * ✅ FIXED: Check if JWT processing should be skipped for this path
+     * Check if JWT processing should be skipped for this path
      */
     private boolean shouldSkipJwtProcessing(String path) {
         return SKIP_JWT_PATHS.stream().anyMatch(path::contains);

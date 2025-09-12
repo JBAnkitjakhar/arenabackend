@@ -61,7 +61,12 @@ public class SecurityConfig {
                                 "/auth/**",
                                 "/oauth2/**",
                                 "/login/**",
+                                
+                                // KEEP-ALIVE HEALTH ENDPOINTS (CRITICAL FOR RENDER)
                                 "/health",
+                                "/ping", 
+                                "/healthz",
+                                
                                 "/actuator/**",
                                 "/error"
                         ).permitAll()
