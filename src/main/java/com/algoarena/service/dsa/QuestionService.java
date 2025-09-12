@@ -1,4 +1,4 @@
-// src/main/java/com/algoarena/service/dsa/QuestionService.java - FIXED CACHE EVICTION
+// src/main/java/com/algoarena/service/dsa/QuestionService.java - FIXED APPROACH COUNT LOGIC
 
 package com.algoarena.service.dsa;
 
@@ -56,36 +56,38 @@ public class QuestionService {
     @Autowired
     private UserProgressService userProgressService;
 
+    @Autowired
+    private BulkApproachService bulkApproachService;
+
     // ==================== HYBRID CACHING METHODS ====================
-    
+
     /**
      * HYBRID: Get questions summary with user progress - CACHED with smart eviction
      * Cache key includes all filter parameters for proper cache segmentation
      */
-    @Cacheable(value = "questionsSummary", 
-               key = "#userId + '_page_' + #pageable.pageNumber + '_size_' + #pageable.pageSize + '_cat_' + (#categoryId ?: 'all') + '_lvl_' + (#level ?: 'all') + '_search_' + (#search ?: 'none')")
+    @Cacheable(value = "questionsSummary", key = "#userId + '_page_' + #pageable.pageNumber + '_size_' + #pageable.pageSize + '_cat_' + (#categoryId ?: 'all') + '_lvl_' + (#level ?: 'all') + '_search_' + (#search ?: 'none')")
     public Page<QuestionSummaryDTO> getQuestionsWithProgress(
-            Pageable pageable, 
-            String categoryId, 
-            String level, 
+            Pageable pageable,
+            String categoryId,
+            String level,
             String search,
             String userId) {
-        
+
         System.out.println("CACHE MISS: Fetching fresh questions data for user: " + userId);
-        
+
         // Step 1: Get questions with filtering
         Page<Question> questionsPage = getAllQuestionsFiltered(pageable, categoryId, level, search);
-        
+
         // Step 2: Get all question IDs from the page
         List<String> questionIds = questionsPage.getContent()
-            .stream()
-            .map(Question::getId)
-            .collect(Collectors.toList());
-        
+                .stream()
+                .map(Question::getId)
+                .collect(Collectors.toList());
+
         if (questionIds.isEmpty()) {
             return new PageImpl<>(List.of(), pageable, 0);
         }
-        
+
         // Step 3: Get user progress for these questions (optimized)
         Map<String, UserProgress> progressMap = new HashMap<>();
         for (String questionId : questionIds) {
@@ -94,44 +96,54 @@ public class QuestionService {
                 progressMap.put(questionId, progress.get());
             }
         }
+
+        System.out.println(
+                "DEBUG: Found " + progressMap.size() + " progress records out of " + questionIds.size() + " questions");
+
+        // Step 4: TRULY BULK - Get approach counts using single aggregation query
+        System.out.println("DEBUG: Using bulk approach count service for " + questionIds.size() + " questions for user: " + userId);
         
-        System.out.println("DEBUG: Found " + progressMap.size() + " progress records out of " + questionIds.size() + " questions");
+        Map<String, Integer> approachCountMap = bulkApproachService.getBulkApproachCounts(userId, questionIds);
         
-        // Step 4: Convert to QuestionSummaryDTO with embedded user progress
+        // Log detailed results
+        int totalApproaches = approachCountMap.values().stream().mapToInt(Integer::intValue).sum();
+        int questionsWithApproaches = (int) approachCountMap.values().stream().filter(count -> count > 0).count();
+        
+        System.out.println("BULK RESULT: Found total of " + totalApproaches + " approaches across " + 
+                         questionsWithApproaches + " questions (out of " + questionIds.size() + " total questions)");
+
+        // Step 5: Convert to QuestionSummaryDTO with embedded user progress and approach counts
         List<QuestionSummaryDTO> summaryList = questionsPage.getContent()
-            .stream()
-            .map(question -> {
-                QuestionSummaryDTO summary = new QuestionSummaryDTO(
-                    question.getId(),
-                    question.getTitle(),
-                    question.getCategory().getId(),
-                    question.getCategory().getName(),
-                    question.getLevel(),
-                    question.getCreatedAt()
-                );
-                
-                // Add user progress
-                UserProgress progress = progressMap.get(question.getId());
-                int approachCount = 0; // Simplified for now
-                
-                if (progress != null && progress.isSolved()) {
-                    summary.setUserProgress(new QuestionSummaryDTO.UserProgressSummary(
-                        true, 
-                        progress.getSolvedAt(), 
-                        approachCount
-                    ));
-                } else {
-                    summary.setUserProgress(new QuestionSummaryDTO.UserProgressSummary(
-                        false, 
-                        null, 
-                        approachCount
-                    ));
-                }
-                
-                return summary;
-            })
-            .collect(Collectors.toList());
-        
+                .stream()
+                .map(question -> {
+                    QuestionSummaryDTO summary = new QuestionSummaryDTO(
+                            question.getId(),
+                            question.getTitle(),
+                            question.getCategory().getId(),
+                            question.getCategory().getName(),
+                            question.getLevel(),
+                            question.getCreatedAt());
+
+                    // Add user progress
+                    UserProgress progress = progressMap.get(question.getId());
+                    int approachCount = approachCountMap.getOrDefault(question.getId(), 0);
+
+                    if (progress != null && progress.isSolved()) {
+                        summary.setUserProgress(new QuestionSummaryDTO.UserProgressSummary(
+                                true,
+                                progress.getSolvedAt(),
+                                approachCount));
+                    } else {
+                        summary.setUserProgress(new QuestionSummaryDTO.UserProgressSummary(
+                                false,
+                                null,
+                                approachCount));
+                    }
+
+                    return summary;
+                })
+                .collect(Collectors.toList());
+
         // Return paginated result
         return new PageImpl<>(summaryList, pageable, questionsPage.getTotalElements());
     }
@@ -139,11 +151,10 @@ public class QuestionService {
     /**
      * Helper method to get filtered questions (can be cached separately)
      */
-    @Cacheable(value = "questionsList", 
-               key = "'page_' + #pageable.pageNumber + '_size_' + #pageable.pageSize + '_cat_' + (#categoryId ?: 'all') + '_lvl_' + (#level ?: 'all') + '_search_' + (#search ?: 'none')")
+    @Cacheable(value = "questionsList", key = "'page_' + #pageable.pageNumber + '_size_' + #pageable.pageSize + '_cat_' + (#categoryId ?: 'all') + '_lvl_' + (#level ?: 'all') + '_search_' + (#search ?: 'none')")
     public Page<Question> getAllQuestionsFiltered(Pageable pageable, String categoryId, String level, String search) {
         System.out.println("CACHE MISS: Fetching filtered questions from database");
-        
+
         Page<Question> questions;
 
         if (search != null && !search.trim().isEmpty()) {
@@ -155,7 +166,8 @@ public class QuestionService {
         } else if (categoryId != null && !categoryId.isEmpty()) {
             if (level != null && !level.isEmpty()) {
                 QuestionLevel questionLevel = QuestionLevel.fromString(level);
-                List<Question> filteredQuestions = questionRepository.findByCategory_IdAndLevel(categoryId, questionLevel);
+                List<Question> filteredQuestions = questionRepository.findByCategory_IdAndLevel(categoryId,
+                        questionLevel);
                 int start = (int) pageable.getOffset();
                 int end = Math.min((start + pageable.getPageSize()), filteredQuestions.size());
                 List<Question> pageContent = filteredQuestions.subList(start, end);
@@ -182,7 +194,7 @@ public class QuestionService {
     /**
      * Create question with PROPER cache eviction using @CacheEvict
      */
-    @CacheEvict(value = {"questionsSummary", "questionsList", "categoriesProgress", "adminStats"}, allEntries = true)
+    @CacheEvict(value = { "questionsSummary", "questionsList", "categoriesProgress", "adminStats" }, allEntries = true)
     public QuestionDTO createQuestion(QuestionDTO questionDTO, User createdBy) {
         // Find category
         Category category = categoryRepository.findById(questionDTO.getCategoryId())
@@ -204,16 +216,16 @@ public class QuestionService {
         }
 
         Question savedQuestion = questionRepository.save(question);
-        
+
         System.out.println("Question created and ALL relevant caches evicted");
-        
+
         return QuestionDTO.fromEntity(savedQuestion);
     }
 
     /**
      * Update question with PROPER cache eviction using @CacheEvict
      */
-    @CacheEvict(value = {"questionsSummary", "questionsList", "categoriesProgress", "adminStats"}, allEntries = true)
+    @CacheEvict(value = { "questionsSummary", "questionsList", "categoriesProgress", "adminStats" }, allEntries = true)
     public QuestionDTO updateQuestion(String id, QuestionDTO questionDTO) {
         Question question = questionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Question not found"));
@@ -238,7 +250,7 @@ public class QuestionService {
         }
 
         Question updatedQuestion = questionRepository.save(question);
-        
+
         System.out.println("Question updated and ALL relevant caches evicted");
 
         return QuestionDTO.fromEntity(updatedQuestion);
@@ -247,7 +259,7 @@ public class QuestionService {
     /**
      * Delete question with PROPER cache eviction using @CacheEvict
      */
-    @CacheEvict(value = {"questionsSummary", "questionsList", "categoriesProgress", "adminStats"}, allEntries = true)
+    @CacheEvict(value = { "questionsSummary", "questionsList", "categoriesProgress", "adminStats" }, allEntries = true)
     @Transactional
     public void deleteQuestion(String id) {
         // Delete all related data
@@ -257,7 +269,7 @@ public class QuestionService {
 
         // Delete the question
         questionRepository.deleteById(id);
-        
+
         System.out.println("Question deleted and ALL relevant caches evicted");
     }
 
@@ -305,7 +317,7 @@ public class QuestionService {
     @Cacheable(value = "adminStats", key = "'questionCounts'")
     public Map<String, Object> getQuestionCounts() {
         System.out.println("CACHE MISS: Fetching question counts from database");
-        
+
         Map<String, Object> counts = new HashMap<>();
 
         long totalQuestions = questionRepository.count();
