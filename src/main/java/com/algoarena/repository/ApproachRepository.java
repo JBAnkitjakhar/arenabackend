@@ -1,13 +1,10 @@
-// src/main/java/com/algoarena/repository/ApproachRepository.java
+// src/main/java/com/algoarena/repository/ApproachRepository.java - FINAL CLEAN VERSION
 package com.algoarena.repository;
 
 import com.algoarena.model.Approach;
-
-import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
-
 import java.util.List;
 
 @Repository
@@ -25,7 +22,7 @@ public interface ApproachRepository extends MongoRepository<Approach, String> {
     // Find approaches by question
     List<Approach> findByQuestion_Id(String questionId);
 
-    // Count approaches for a user on a specific question
+    // Count approaches for a user on a specific question (THIS WORKS PERFECTLY)
     long countByQuestion_IdAndUser_Id(String questionId, String userId);
 
     // Count total approaches by user
@@ -52,26 +49,6 @@ public interface ApproachRepository extends MongoRepository<Approach, String> {
     // Find recent approaches by user
     List<Approach> findTop10ByUser_IdOrderByUpdatedAtDesc(String userId);
 
-    /**
-     * Bulk count approaches by user and multiple questions
-     * Returns array of [questionId, count] for efficient mapping
-     * This avoids N+1 queries when getting approach counts for multiple questions
-     */
-    @Query(value = "{ 'user._id': ?0, 'question._id': { $in: ?1 } }")
-    @Aggregation(pipeline = {
-            "{ $match: { 'user._id': ?0, 'question._id': { $in: ?1 } } }",
-            "{ $group: { _id: '$question._id', count: { $sum: 1 } } }",
-            "{ $project: { questionId: '$_id', count: 1, _id: 0 } }"
-    })
-    List<Object[]> countApproachesByQuestionIds(String userId, List<String> questionIds);
-
-    /**
-     * Find approaches by user and multiple questions (for bulk operations)
-     */
+    // Find approaches by user and multiple questions (for potential bulk operations)
     List<Approach> findByUser_IdAndQuestion_IdIn(String userId, List<String> questionIds);
-
-    /**
-     * Count approaches for a specific user and question
-     */
-    long countByUser_IdAndQuestion_Id(String userId, String questionId);
 }
