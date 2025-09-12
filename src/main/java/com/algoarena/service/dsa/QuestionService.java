@@ -73,7 +73,7 @@ public class QuestionService {
             String search,
             String userId) {
 
-        System.out.println("CACHE MISS: Fetching fresh questions data for user: " + userId);
+        // System.out.println("CACHE MISS: Fetching fresh questions data for user: " + userId);
 
         // Step 1: Get questions with filtering
         Page<Question> questionsPage = getAllQuestionsFiltered(pageable, categoryId, level, search);
@@ -97,20 +97,20 @@ public class QuestionService {
             }
         }
 
-        System.out.println(
-                "DEBUG: Found " + progressMap.size() + " progress records out of " + questionIds.size() + " questions");
+        // System.out.println(
+        //         "DEBUG: Found " + progressMap.size() + " progress records out of " + questionIds.size() + " questions");
 
         // Step 4: TRULY BULK - Get approach counts using single aggregation query
-        System.out.println("DEBUG: Using bulk approach count service for " + questionIds.size() + " questions for user: " + userId);
+        // System.out.println("DEBUG: Using bulk approach count service for " + questionIds.size() + " questions for user: " + userId);
         
         Map<String, Integer> approachCountMap = bulkApproachService.getBulkApproachCounts(userId, questionIds);
         
         // Log detailed results
-        int totalApproaches = approachCountMap.values().stream().mapToInt(Integer::intValue).sum();
-        int questionsWithApproaches = (int) approachCountMap.values().stream().filter(count -> count > 0).count();
+        // int totalApproaches = approachCountMap.values().stream().mapToInt(Integer::intValue).sum();
+        // int questionsWithApproaches = (int) approachCountMap.values().stream().filter(count -> count > 0).count();
         
-        System.out.println("BULK RESULT: Found total of " + totalApproaches + " approaches across " + 
-                         questionsWithApproaches + " questions (out of " + questionIds.size() + " total questions)");
+        // System.out.println("BULK RESULT: Found total of " + totalApproaches + " approaches across " + 
+        //                  questionsWithApproaches + " questions (out of " + questionIds.size() + " total questions)");
 
         // Step 5: Convert to QuestionSummaryDTO with embedded user progress and approach counts
         List<QuestionSummaryDTO> summaryList = questionsPage.getContent()
@@ -153,7 +153,7 @@ public class QuestionService {
      */
     @Cacheable(value = "questionsList", key = "'page_' + #pageable.pageNumber + '_size_' + #pageable.pageSize + '_cat_' + (#categoryId ?: 'all') + '_lvl_' + (#level ?: 'all') + '_search_' + (#search ?: 'none')")
     public Page<Question> getAllQuestionsFiltered(Pageable pageable, String categoryId, String level, String search) {
-        System.out.println("CACHE MISS: Fetching filtered questions from database");
+        // System.out.println("CACHE MISS: Fetching filtered questions from database");
 
         Page<Question> questions;
 
@@ -217,7 +217,7 @@ public class QuestionService {
 
         Question savedQuestion = questionRepository.save(question);
 
-        System.out.println("Question created and ALL relevant caches evicted");
+        // System.out.println("Question created and ALL relevant caches evicted");
 
         return QuestionDTO.fromEntity(savedQuestion);
     }
@@ -251,7 +251,7 @@ public class QuestionService {
 
         Question updatedQuestion = questionRepository.save(question);
 
-        System.out.println("Question updated and ALL relevant caches evicted");
+        // System.out.println("Question updated and ALL relevant caches evicted");
 
         return QuestionDTO.fromEntity(updatedQuestion);
     }
@@ -270,7 +270,7 @@ public class QuestionService {
         // Delete the question
         questionRepository.deleteById(id);
 
-        System.out.println("Question deleted and ALL relevant caches evicted");
+        // System.out.println("Question deleted and ALL relevant caches evicted");
     }
 
     // ==================== EXISTING METHODS ====================
@@ -316,7 +316,7 @@ public class QuestionService {
 
     @Cacheable(value = "adminStats", key = "'questionCounts'")
     public Map<String, Object> getQuestionCounts() {
-        System.out.println("CACHE MISS: Fetching question counts from database");
+        // System.out.println("CACHE MISS: Fetching question counts from database");
 
         Map<String, Object> counts = new HashMap<>();
 

@@ -1,11 +1,13 @@
-// algoarena-backend/src.main/java/com/algoarena/AlgoArenaBackendApplication.java
+// algoarena-backend/src/main/java/com/algoarena/AlgoArenaBackendApplication.java
 
 package com.algoarena;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling  // Add this annotation to enable the keep-alive scheduler
 public class AlgoArenaBackendApplication {
 
 	public static void main(String[] args) {

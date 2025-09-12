@@ -77,8 +77,8 @@ public class UserProgressService {
 
         // CRITICAL: @CacheEvict annotation above ensures all relevant caches are
         // cleared
-        System.out.println("User progress updated and ALL CACHES EVICTED for user: " + userId +
-                " - question: " + questionId + " - solved: " + solved);
+        // System.out.println("User progress updated and ALL CACHES EVICTED for user: " + userId +
+        //         " - question: " + questionId + " - solved: " + solved);
 
         return UserProgressDTO.fromEntity(savedProgress);
     }
@@ -356,42 +356,42 @@ public class UserProgressService {
      * TEMPORARY DEBUG METHOD - Remove after debugging
      */
     public void debugUserProgress(String userId) {
-        System.out.println("=== DEBUG USER PROGRESS ===");
-        System.out.println("Searching for user ID: " + userId);
+        // System.out.println("=== DEBUG USER PROGRESS ===");
+        // System.out.println("Searching for user ID: " + userId);
 
         // Test 1: Find all progress for user
-        List<UserProgress> allProgress = userProgressRepository.findByUser_Id(userId);
-        System.out.println("Found " + allProgress.size() + " total progress records for user");
+        // List<UserProgress> allProgress = userProgressRepository.findByUser_Id(userId);
+        // System.out.println("Found " + allProgress.size() + " total progress records for user");
 
-        for (UserProgress progress : allProgress) {
-            System.out.println("Progress Record:");
-            System.out.println("  - ID: " + progress.getId());
-            System.out.println("  - User ID: " + (progress.getUser() != null ? progress.getUser().getId() : "NULL"));
-            System.out.println(
-                    "  - Question ID: " + (progress.getQuestion() != null ? progress.getQuestion().getId() : "NULL"));
-            System.out.println("  - Solved: " + progress.isSolved());
-            System.out.println("  - SolvedAt: " + progress.getSolvedAt());
-            System.out.println("---");
-        }
+        // for (UserProgress progress : allProgress) {
+        //     // System.out.println("Progress Record:");
+        //     // System.out.println("  - ID: " + progress.getId());
+        //     // System.out.println("  - User ID: " + (progress.getUser() != null ? progress.getUser().getId() : "NULL"));
+        //     System.out.println(
+        //             "  - Question ID: " + (progress.getQuestion() != null ? progress.getQuestion().getId() : "NULL"));
+        //     System.out.println("  - Solved: " + progress.isSolved());
+        //     System.out.println("  - SolvedAt: " + progress.getSolvedAt());
+        //     System.out.println("---");
+        // }
 
         // Test 2: Find solved progress only
-        List<UserProgress> solvedProgress = userProgressRepository.findByUser_IdAndSolvedTrue(userId);
-        System.out.println("Found " + solvedProgress.size() + " SOLVED progress records for user");
+        // List<UserProgress> solvedProgress = userProgressRepository.findByUser_IdAndSolvedTrue(userId);
+        // System.out.println("Found " + solvedProgress.size() + " SOLVED progress records for user");
 
         // Test 3: Try to find specific question
         String testQuestionId = "68a0775c16eb75603af16d58"; // Two Sum Problem
         Optional<UserProgress> specificProgress = userProgressRepository.findByUser_IdAndQuestion_Id(userId,
                 testQuestionId);
-        System.out.println("Specific question lookup (" + testQuestionId + "): " + specificProgress.isPresent());
+        // System.out.println("Specific question lookup (" + testQuestionId + "): " + specificProgress.isPresent());
         if (specificProgress.isPresent()) {
-            System.out.println("  - Solved: " + specificProgress.get().isSolved());
+            // System.out.println("  - Solved: " + specificProgress.get().isSolved());
         }
 
         // Test 4: Try bulk lookup
-        List<String> testQuestionIds = List.of("68a0775c16eb75603af16d58", "68b19033b1cd20207b378042");
-        List<UserProgress> bulkResults = userProgressRepository.findByUser_IdAndQuestion_IdIn(userId, testQuestionIds);
-        System.out.println("Bulk lookup returned " + bulkResults.size() + " records");
+        // List<String> testQuestionIds = List.of("68a0775c16eb75603af16d58", "68b19033b1cd20207b378042");
+        // List<UserProgress> bulkResults = userProgressRepository.findByUser_IdAndQuestion_IdIn(userId, testQuestionIds);
+        // System.out.println("Bulk lookup returned " + bulkResults.size() + " records");
 
-        System.out.println("=== END DEBUG ===");
+        // System.out.println("=== END DEBUG ===");
     }
 }

@@ -84,14 +84,14 @@ public class BulkApproachService {
                 countMap.put(questionId, result.getCount());
             }
 
-            System.out.println("BULK SUCCESS: Counted approaches for " + questionIds.size() + 
-                             " questions in single aggregation query. Found " + 
-                             results.getMappedResults().size() + " questions with approaches.");
+            // System.out.println("BULK SUCCESS: Counted approaches for " + questionIds.size() + 
+            //                  " questions in single aggregation query. Found " + 
+            //                  results.getMappedResults().size() + " questions with approaches.");
 
             return countMap;
 
         } catch (Exception e) {
-            System.out.println("BULK FAILED: Aggregation failed, falling back to individual queries: " + e.getMessage());
+            // System.out.println("BULK FAILED: Aggregation failed, falling back to individual queries: " + e.getMessage());
             
             // Fallback to individual queries
             return getFallbackApproachCounts(userId, questionIds);
@@ -109,12 +109,12 @@ public class BulkApproachService {
                 long count = approachRepository.countByQuestion_IdAndUser_Id(questionId, userId);
                 countMap.put(questionId, (int) count);
             } catch (Exception e) {
-                System.out.println("ERROR counting approaches for question " + questionId + ": " + e.getMessage());
+                // System.out.println("ERROR counting approaches for question " + questionId + ": " + e.getMessage());
                 countMap.put(questionId, 0);
             }
         }
         
-        System.out.println("FALLBACK SUCCESS: Used individual queries for " + questionIds.size() + " questions");
+        // System.out.println("FALLBACK SUCCESS: Used individual queries for " + questionIds.size() + " questions");
         return countMap;
     }
 

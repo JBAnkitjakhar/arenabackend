@@ -53,7 +53,7 @@ public class CategoryService {
      */
     @Cacheable(value = "categoriesProgress", key = "#userId")
     public List<CategorySummaryDTO> getCategoriesWithProgress(String userId) {
-        System.out.println("CACHE MISS: Fetching fresh categories with progress for user: " + userId);
+        // System.out.println("CACHE MISS: Fetching fresh categories with progress for user: " + userId);
 
         // Step 1: Get all categories
         List<Category> categories = categoryRepository.findAllByOrderByNameAsc();
@@ -69,7 +69,7 @@ public class CategoryService {
                 .map(progress -> progress.getQuestion().getId())
                 .collect(Collectors.toSet());
 
-        System.out.println("DEBUG: User " + userId + " has solved " + solvedQuestionIds.size() + " questions");
+        // System.out.println("DEBUG: User " + userId + " has solved " + solvedQuestionIds.size() + " questions");
 
         // Step 4: Process each category
         return categories.stream()
@@ -146,7 +146,7 @@ public class CategoryService {
      */
     @Cacheable(value = "categoriesList", key = "'all'")
     public List<CategoryDTO> getAllCategories() {
-        System.out.println("CACHE MISS: Fetching all categories from database");
+        // System.out.println("CACHE MISS: Fetching all categories from database");
         
         List<Category> categories = categoryRepository.findAllByOrderByNameAsc();
         return categories.stream()
@@ -167,7 +167,7 @@ public class CategoryService {
 
         Category savedCategory = categoryRepository.save(category);
         
-        System.out.println("Category created and ALL relevant caches evicted");
+        // System.out.println("Category created and ALL relevant caches evicted");
         
         return CategoryDTO.fromEntity(savedCategory);
     }
@@ -184,7 +184,7 @@ public class CategoryService {
 
         Category updatedCategory = categoryRepository.save(category);
         
-        System.out.println("Category updated and ALL relevant caches evicted");
+        // System.out.println("Category updated and ALL relevant caches evicted");
 
         return CategoryDTO.fromEntity(updatedCategory);
     }
@@ -219,7 +219,7 @@ public class CategoryService {
         // Finally, delete the category
         categoryRepository.deleteById(id);
 
-        System.out.println("Category and " + deletedQuestionsCount + " questions deleted, ALL caches evicted");
+        // System.out.println("Category and " + deletedQuestionsCount + " questions deleted, ALL caches evicted");
 
         return deletedQuestionsCount;
     }
@@ -249,7 +249,7 @@ public class CategoryService {
      */
     @Cacheable(value = "categoryStats", key = "#categoryId")
     public Map<String, Object> getCategoryStats(String categoryId) {
-        System.out.println("CACHE MISS: Fetching category stats for ID: " + categoryId);
+        // System.out.println("CACHE MISS: Fetching category stats for ID: " + categoryId);
         
         Map<String, Object> stats = new HashMap<>();
 

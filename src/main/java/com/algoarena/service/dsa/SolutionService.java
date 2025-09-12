@@ -127,7 +127,7 @@ public class SolutionService {
 
         // STEP 2: Delete the solution document
         solutionRepository.deleteById(id);
-        System.out.println("Successfully deleted solution: " + id);
+        // System.out.println("Successfully deleted solution: " + id);
     }
 
     // Check if solution exists

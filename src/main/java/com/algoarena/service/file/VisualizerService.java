@@ -319,11 +319,11 @@ public class VisualizerService {
             int fileCount = fileList.size();
 
             if (fileCount == 0) {
-                System.out.println("No visualizer files found for solution: " + solutionId);
+                // System.out.println("No visualizer files found for solution: " + solutionId);
                 return;
             }
 
-            System.out.println("Deleting " + fileCount + " visualizer files for solution: " + solutionId);
+            // System.out.println("Deleting " + fileCount + " visualizer files for solution: " + solutionId);
 
             // Delete all files in one operation
             gridFsTemplate.delete(query);
