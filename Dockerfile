@@ -1,10 +1,14 @@
-# Dockerfile - Fixed for Render PORT environment variable issue
+# Dockerfile - Fixed for timezone and Render PORT environment variable issue
 
 # Use official OpenJDK 21 image
 FROM openjdk:21-jdk-slim
 
+# Set timezone to UTC
+ENV TZ=UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 # Install curl for health checks
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl tzdata && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -37,6 +41,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8080/api/actuator/health || exit 1
 
-# Run the application with production profile
-# Use shell form to properly handle environment variables
-CMD java -Dspring.profiles.active=prod -jar target/algoarena-backend-0.0.1-SNAPSHOT.jar
+# ✅ UPDATED: Run the application with production profile AND timezone flag
+CMD java -Duser.timezone=UTC -Dspring.profiles.active=prod -jar target/algoarena-backend-0.0.1-SNAPSHOT.jar
